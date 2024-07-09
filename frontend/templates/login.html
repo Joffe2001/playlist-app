@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Login
+{% endblock %}
+
+{% block main %}
+    <form action="/login" method="POST">
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" class="form-control" id="username" name="username">
+        </div>
+
+        <!-- Error existing username error message -->
+        {% if request.args.get('error') == 'invalid_input' %}
+        <div class="alert alert-danger" role="alert">
+            Wrong username or password, try again.
+        </div>
+        {% endif %}
+         <!-- Display missing fields error message -->
+         {% if request.args.get('error') == 'missing_fields' %}
+         <div class="alert alert-danger" role="alert">
+               Missing required fields. Please fill in all fields.
+         </div>
+         {% endif %}
+
+        <div class="form-group">
+            <label for="exampleInputPassword1">Password</label>
+            <input type="password" class="form-control" id="exampleInputPassword1" name="password">
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+{% endblock %}

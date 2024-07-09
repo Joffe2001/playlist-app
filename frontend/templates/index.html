@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome to Ido's Project{% endblock %}
+
+{% block main %}
+<div class="container mt-5">
+  <h1>Welcome to my project app!</h1>
+  <p>This is a placeholder, stay tuned.</p>
+
+  {% if not user %}
+    <p>To get started, please register or login.</p>
+    <a href="{{ url_for('views.register') }}" class="btn btn-primary">Register</a>
+    <a href="{{ url_for('views.login') }}" class="btn btn-outline-primary">Login</a>
+  {% else %}
+    <p>Hi {{ user }}, you are logged in!</p>
+  {% endif %}
+</div>
+{% endblock %}
