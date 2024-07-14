@@ -6,6 +6,11 @@ pipeline {
         }
     }
 
+    environment {
+        DOCKER_REGISTRY = 'https://registry.hub.docker.com'
+        GITHUB_REPO = 'Joffe2001/playlist-app'
+    }
+
     stages {
         stage('Checkout Code') {
             steps {
@@ -39,8 +44,7 @@ pipeline {
             steps {
                 script {
                     def dockerImageTag = "${env.BRANCH_NAME}-${env.BUILD_ID}"
-                    echo "Building Docker image: joffe2001/playlist-app:${dockerImageTag}"
-                    dockerImage = docker.build("joffe2001/playlist-app:${dockerImageTag}")
+                    def dockerImage = docker.build("joffe2001/playlist-app:${dockerImageTag}")
                 }
             }
         }
