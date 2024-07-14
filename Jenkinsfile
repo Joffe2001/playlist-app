@@ -1,7 +1,14 @@
 pipeline {
     agent {
         kubernetes {
-            inheritFrom 'docker'
+            defaultContainer 'docker'
+            label 'docker'
+            containerTemplate {
+                name 'docker'
+                image 'python:3.8'
+                command 'cat'
+                ttyEnabled true
+            }
         }
     }
 
