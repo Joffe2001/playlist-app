@@ -77,8 +77,10 @@ pipeline {
                 }
             }
             steps {
-                dir('helm-chart') {
-                    sh "helm upgrade --install joffeapp . -n default -f values/joffeapp-values.yaml"
+                docker.image('alpine/helm:3.5.2').inside('-v /var/run/docker.sock:/var/run/docker.sock') {
+                    dir('helm-chart') {
+                        sh "helm upgrade --install joffeapp . -n default -f values/joffeapp-values.yaml"
+                    }
                 }
             }
         }
