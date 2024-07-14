@@ -17,6 +17,19 @@ pipeline {
     }
 
     stages {
+        stage('Check Python and Install Pip') {
+            steps {
+                // Check if pip is available, if not, install it
+                script {
+                    def pipCheck = sh(script: 'command -v pip', returnStatus: true)
+                    if (pipCheck != 0) {
+                        sh 'curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py'
+                        sh 'python get-pip.py --user'
+                        sh 'export PATH=$HOME/.local/bin:$PATH'
+                    }
+                }
+            }
+        }
         stage('Checkout Code') {
             steps {
                 checkout scm
