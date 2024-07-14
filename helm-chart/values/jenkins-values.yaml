@@ -1,0 +1,33 @@
+jenkins:
+  namespace: jenkins
+  controller:
+    jenkinsUrl: "http://jenkins.example.com"
+    adminUser:
+      enabled: true
+      existingSecret: "jenkins-admin"
+    additionalPlugins:
+      - kubernetes:4253.v7700d91739e5
+      - workflow-aggregator:600.vb_57cdd26fdd7
+      - git:5.2.0
+      - configuration-as-code:1810.v9b_c30a_249a_4c
+      - gitlab-plugin:1.7.14
+      - blueocean:1.27.13
+      - workflow-multibranch:791.v28fb_f74dfca_e
+      - login-theme:146.v64a_da_cf70ea_6
+      - prometheus:773.v3b_62d8178eec
+      - github-oauth:588.vf696a350572a_
+    securityRealm:
+      local:
+        allowsSignup: false
+        users:
+          - id: "admin"
+            password: "admin"
+          - id: "project-managers"
+            password: "password123"
+    configScripts:
+      my-casc-config: |
+        jenkins:
+          systemMessage: "Jenkins configured using Configuration as Code"
+  agent:
+    enabled: true
+    namespace: default

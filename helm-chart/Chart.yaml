@@ -1,0 +1,4 @@
+apiVersion: v2
+name: joffeapp
+description: A Helm chart for Joffe App
+version: 1.2
