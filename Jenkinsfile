@@ -10,6 +10,7 @@ pipeline {
         DOCKER_REGISTRY = 'https://registry.hub.docker.com'
         GITHUB_REPO = 'Joffe2001/playlist-app'
         MASTER_BRANCH = 'master'
+        GITHUB_TOKEN = credentials('github-token')
     }
 
     stages {
