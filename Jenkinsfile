@@ -1,37 +1,11 @@
 pipeline {
     agent {
         kubernetes {
-            inheritFrom 'docker'
-            yaml """
-                apiVersion: v1
-                kind: Pod
-                spec:
-                  containers:
-                    - name: docker
-                      image: python:3.8
-                      command:
-                        - 'cat'
-                      tty: true
-            """
+            docker { image 'python:3.8-buster' }
         }
-    }
-
-    environment {
-        PATH = "/usr/local/bin:${env.PATH}"
     }
 
     stages {
-        stage('Check Python and Install Pip') {
-            steps {
-                script {
-                    def pythonCheck = sh(script: 'command -v python3.8', returnStatus: true)
-                    if (pythonCheck != 0) {
-                        tool name: 'Python 3.8', type: 'hudson.plugins.python.PythonInstallation'
-                    }
-                }
-            }
-        }
-
         stage('Checkout Code') {
             steps {
                 checkout scm
