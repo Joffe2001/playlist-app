@@ -16,20 +16,22 @@ pipeline {
         }
     }
 
+    environment {
+        PATH = "/usr/local/bin:${env.PATH}"
+    }
+
     stages {
         stage('Check Python and Install Pip') {
             steps {
-                // Check if pip is available, if not, install it
                 script {
-                    def pipCheck = sh(script: 'command -v pip', returnStatus: true)
-                    if (pipCheck != 0) {
-                        sh 'curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py'
-                        sh 'python get-pip.py --user'
-                        sh 'export PATH=$HOME/.local/bin:$PATH'
+                    def pythonCheck = sh(script: 'command -v python3.8', returnStatus: true)
+                    if (pythonCheck != 0) {
+                        tool name: 'Python 3.8', type: 'hudson.plugins.python.PythonInstallation'
                     }
                 }
             }
         }
+
         stage('Checkout Code') {
             steps {
                 checkout scm
