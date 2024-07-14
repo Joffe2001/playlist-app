@@ -1,17 +1,8 @@
 pipeline {
     agent {
         kubernetes {
-            yaml """
-                apiVersion: v1
-                kind: Pod
-                spec:
-                  containers:
-                    - name: python
-                      image: python:3.8-buster
-                      command:
-                        - 'cat'
-                      tty: true
-            """
+            yamlFile 'helm-chart/setup.yaml'
+            defaultContainer 'builder'
         }
     }
 
