@@ -1,14 +1,18 @@
 pipeline {
     agent {
         kubernetes {
-            defaultContainer 'docker'
-            label 'docker'
-            containerTemplate {
-                name 'docker'
-                image 'python:3.8'
-                command 'cat'
-                ttyEnabled true
-            }
+            inheritFrom 'docker'
+            yaml """
+                apiVersion: v1
+                kind: Pod
+                spec:
+                  containers:
+                    - name: docker
+                      image: python:3.8
+                      command:
+                        - 'cat'
+                      tty: true
+            """
         }
     }
 
@@ -19,9 +23,17 @@ pipeline {
             }
         }
 
+        stage('Setup Environment') {
+            steps {
+                sh 'pip install --upgrade pip'
+            }
+        }
+
         stage('Setup Tests') {
             steps {
-                sh 'pip install -r requirements.txt'
+                dir('src') {
+                    sh 'pip install -r requirements.txt'
+                }
             }
         }
 
@@ -42,7 +54,7 @@ pipeline {
         stage('Run Unit Tests') {
             steps {
                 sh 'pytest tests/'
-                sh 'helm package helm-chart/'
+                sh 'helm package src/helm-chart/'
             }
         }
 
@@ -84,8 +96,8 @@ pipeline {
                     docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-credentials') {
                         dockerImage.push("${env.BRANCH_NAME}-${env.BUILD_ID}")
                     }
-                    sh 'helm repo index --url https://github.com/Joffe2001/playlist-app/tree/master/helm-chart/ --merge index.yaml helm-chart/'
-                    sh 'helm push helm-chart-*.tgz https://github.com/Joffe2001/playlist-app/tree/master/helm-chart/'
+                    sh 'helm repo index --url https://github.com/Joffe2001/playlist-app/tree/master/src/helm-chart/ --merge index.yaml src/helm-chart/'
+                    sh 'helm push src/helm-chart-*.tgz https://github.com/Joffe2001/playlist-app/tree/master/src/helm-chart/'
                 }
             }
         }
