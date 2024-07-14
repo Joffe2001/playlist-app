@@ -13,9 +13,11 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the application code to the container
-COPY ./backend /app/backend
+RUN ls -l
 
-COPY ./frontend /app/frontend
+COPY backend /app/backend
+
+COPY frontend /app/frontend
 
 # Set the PYTHONPATH environment variable
 ENV PYTHONPATH="/app/backend"
