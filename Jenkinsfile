@@ -51,8 +51,8 @@ pipeline {
 
         stage('Run Unit Tests') {
             steps {
-                sh 'pytest tests/'
-                sh 'helm package src/helm-chart/'
+                sh 'pytest src/tests/'
+                sh 'helm package helm-chart/'
             }
         }
 
