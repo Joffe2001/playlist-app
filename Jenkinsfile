@@ -1,12 +1,17 @@
 pipeline {
     agent {
         kubernetes {
-            containerTemplate {
-                name 'python'
-                image 'python:3.8-buster'
-                tty true
-                command 'cat'
-            }
+            yaml """
+                apiVersion: v1
+                kind: Pod
+                spec:
+                  containers:
+                    - name: python
+                      image: python:3.8-buster
+                      command:
+                        - 'cat'
+                      tty: true
+            """
         }
     }
 
