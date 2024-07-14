@@ -15,7 +15,9 @@ pipeline {
 
         stage('Setup Environment') {
             steps {
-                sh 'apk update && add py-pip'
+                sh 'apk update'
+                sh 'apk add py3-pip'
+                sh 'pip install --upgrade pip'
             }
         }
 
