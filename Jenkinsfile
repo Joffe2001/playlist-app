@@ -9,6 +9,7 @@ pipeline {
     environment {
         DOCKER_REGISTRY = 'https://registry.hub.docker.com'
         GITHUB_REPO = 'Joffe2001/playlist-app'
+        MASTER_BRANCH = 'master'
     }
 
     stages {
@@ -63,10 +64,10 @@ pipeline {
             steps {
                 script {
                     def payload = [
-                        title: "Automated Pull Request: ${env.BRANCH_NAME} -> master",
+                        title: "Automated Pull Request: ${env.BRANCH_NAME} -> ${MASTER_BRANCH}",
                         body: "Automated pull request created after successful tests on ${env.BRANCH_NAME}.",
                         head: env.BRANCH_NAME,
-                        base: 'master'
+                        base: MASTER_BRANCH
                     ]
 
                     def response = httpRequest(
@@ -87,12 +88,14 @@ pipeline {
 
         stage('Push Docker Image and HELM Package') {
             when {
-                branch 'master'
+                beforeAgent true
+                changeset "branches: [${MASTER_BRANCH}]"
             }
             steps {
                 script {
+                    def version = "v1.${env.BUILD_NUMBER}"
                     docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-credentials') {
-                        dockerImage.push("${env.BRANCH_NAME}-${env.BUILD_ID}")
+                        dockerImage.push(version)
                     }
                     sh 'helm repo index --url https://github.com/Joffe2001/playlist-app/tree/master/src/helm-chart/ --merge index.yaml src/helm-chart/'
                     sh 'helm push src/helm-chart-*.tgz https://github.com/Joffe2001/playlist-app/tree/master/src/helm-chart/'
@@ -110,7 +113,7 @@ pipeline {
 
         success {
             script {
-                if (env.BRANCH_NAME == 'master') {
+                if (env.BRANCH_NAME == MASTER_BRANCH) {
                     mail to: 'project-idojoffenevo@gmail.com',
                          subject: "SUCCESS: ${env.JOB_NAME} ${env.BUILD_NUMBER}",
                          body: "The build for ${env.JOB_NAME} ${env.BUILD_NUMBER} was successful."
