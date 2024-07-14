@@ -1,7 +1,8 @@
 pipeline {
     agent {
         kubernetes {
-            docker { image 'python:3.8-buster' }
+            docker { 
+                image 'python:3.8-buster'
         }
     }
 
