@@ -63,10 +63,10 @@ pipeline {
             steps {
                 script {
                     def payload = [
-                        title: "Automated Pull Request: ${env.BRANCH_NAME} -> main",
+                        title: "Automated Pull Request: ${env.BRANCH_NAME} -> master",
                         body: "Automated pull request created after successful tests on ${env.BRANCH_NAME}.",
                         head: env.BRANCH_NAME,
-                        base: 'main'
+                        base: 'master'
                     ]
 
                     def response = httpRequest(
@@ -87,7 +87,7 @@ pipeline {
 
         stage('Push Docker Image and HELM Package') {
             when {
-                branch 'main'
+                branch 'master'
             }
             steps {
                 script {
@@ -110,7 +110,7 @@ pipeline {
 
         success {
             script {
-                if (env.BRANCH_NAME == 'main') {
+                if (env.BRANCH_NAME == 'master') {
                     mail to: 'project-idojoffenevo@gmail.com',
                          subject: "SUCCESS: ${env.JOB_NAME} ${env.BUILD_NUMBER}",
                          body: "The build for ${env.JOB_NAME} ${env.BUILD_NUMBER} was successful."
