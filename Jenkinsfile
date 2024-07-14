@@ -44,7 +44,7 @@ pipeline {
             steps {
                 script {
                     def dockerImageTag = "${env.BRANCH_NAME}-${env.BUILD_ID}"
-                    def dockerImage = docker.build("joffe2001/playlist-app:${dockerImageTag}", "-f ./src/Dockerfile .")
+                    def dockerImage = docker.build("joffe2001/playlist-app:${dockerImageTag}", "-f ./src/Dockerfile ./src")
                 }
             }
         }
