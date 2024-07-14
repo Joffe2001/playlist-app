@@ -1,19 +1,14 @@
 pipeline {
     agent {
         kubernetes {
-            inheritFrom 'docker'
-            yaml """
-                apiVersion: v1
-                kind: Pod
-                spec:
-                  containers:
-                    - name: docker
-                      image: python:3.8
-                      command:
-                        - 'cat'
-                      tty: true
-            """
+            yamlFile 'helm-chart/setup.yaml'
+            defaultContainer 'builder'
         }
+    }
+
+    environment {
+        DOCKER_REGISTRY = 'https://registry.hub.docker.com'
+        GITHUB_REPO = 'Joffe2001/playlist-app'
     }
 
     stages {
@@ -25,6 +20,8 @@ pipeline {
 
         stage('Setup Environment') {
             steps {
+                sh 'apk update'
+                sh 'apk add py3-pip'
                 sh 'pip install --upgrade pip'
             }
         }
@@ -46,15 +43,16 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    dockerImage = docker.build("joffe2001/playlist-app:${env.BRANCH_NAME}-${env.BUILD_ID}")
+                    def dockerImageTag = "${env.BRANCH_NAME}-${env.BUILD_ID}"
+                    def dockerImage = docker.build("joffe2001/playlist-app:${dockerImageTag}", "-f ./src/Dockerfile ./src")
                 }
             }
         }
 
         stage('Run Unit Tests') {
             steps {
-                sh 'pytest tests/'
-                sh 'helm package src/helm-chart/'
+                sh 'pytest src/tests/'
+                sh 'helm package helm-chart/'
             }
         }
 
