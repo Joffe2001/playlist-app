@@ -1,8 +1,11 @@
 pipeline {
     agent {
         kubernetes {
-            docker { 
+            containerTemplate {
+                name 'python'
                 image 'python:3.8-buster'
+                tty true
+                command 'cat'
             }
         }
     }
