@@ -1,13 +1,8 @@
 pipeline {
     agent {
         kubernetes {
-            label 'docker'
+            inheritFrom 'docker'
         }
-    }
-
-    environment {
-        GITHUB_TOKEN = credentials('8cd550f2-e8f1-48d2-92c5-3ba53781d322') // GitHub token credential ID
-        DOCKERHUB_CREDENTIAL = credentials('docker-joffe-credential') // Docker credentials credential ID
     }
 
     stages {
