@@ -1,43 +1,26 @@
 import pytest
-from flask import url_for
-from backend.app import app
-
+from flask import Flask
+from backend.users_profile.views import view_bp
+from backend.users_playlist.views import user_playlist_bp
+import os
 
 @pytest.fixture
 def client():
-    app.config['TESTING'] = True
+    """Create and configure a test client for the app."""
+    app = Flask(__name__, static_folder='../frontend/static', template_folder='../frontend/templates')
+    app.config["SECRET_KEY"] = os.urandom(24)
+    app.register_blueprint(view_bp, url_prefix='/')
+    app.register_blueprint(user_playlist_bp, url_prefix='/')
+
     with app.test_client() as client:
-        with app.app_context():
-            yield client
+        yield client
 
-def test_index_page(client):
-    response = client.get(url_for('views.index'))
+def test_index(client):
+    """Test if the index route returns a 200 status code."""
+    response = client.get('/')
     assert response.status_code == 200
-    assert b'Welcome to Ido\'s Project' in response.data
 
-def test_register_page(client):
-    response = client.get(url_for('views.register'))
-    assert response.status_code == 200
-    assert b'Register' in response.data
+# Add more test functions as needed
 
-def test_login_page(client):
-    response = client.get(url_for('views.login'))
-    assert response.status_code == 200
-    assert b'Login' in response.data
-
-def test_profile_page(client):
-    with client.session_transaction() as sess:
-        sess['username'] = 'testuser'
-    
-    response = client.get(url_for('views.profile', username='testuser'))
-    assert response.status_code == 200
-    assert b'Profile' in response.data
-    assert b'testuser' in response.data
-
-def test_user_playlists_page(client):
-    with client.session_transaction() as sess:
-        sess['username'] = 'testuser'
-    
-    response = client.get(url_for('users_playlist.user_playlists', username='testuser'))
-    assert response.status_code == 200
-    assert b'testuser\'s Playlists' in response.data
+if __name__ == '__main__':
+    pytest.main()

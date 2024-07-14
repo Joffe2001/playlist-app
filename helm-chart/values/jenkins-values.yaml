@@ -12,6 +12,7 @@ jenkins:
       - configuration-as-code:1810.v9b_c30a_249a_4c
       - gitlab-plugin:1.7.14
       - blueocean:1.27.13
+      - docker-plugin:1.6.2
       - workflow-multibranch:791.v28fb_f74dfca_e
       - login-theme:146.v64a_da_cf70ea_6
       - prometheus:773.v3b_62d8178eec
@@ -29,5 +30,8 @@ jenkins:
         jenkins:
           systemMessage: "Jenkins configured using Configuration as Code"
   agent:
+  enabled: true
+  namespace: default
+  kubernetes:
     enabled: true
-    namespace: default
+    label: docker
