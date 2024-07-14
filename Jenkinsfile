@@ -43,8 +43,8 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    def dockerImageTag = "${env.BRANCH_NAME}-${env.BUILD_ID}"
-                    def dockerImage = docker.build("joffe2001/playlist-app:${dockerImageTag}", "-f ./src/Dockerfile ./src")
+                    def version = "v1.${env.BUILD_NUMBER}"
+                    def dockerImage = docker.build("joffe2001/playlist-app:${version}", "-f ./src/Dockerfile ./src")
                 }
             }
         }
@@ -58,7 +58,7 @@ pipeline {
 
         stage('Create Pull Request') {
             when {
-                branch 'issue-*'
+                branch 'issue'
             }
             steps {
                 script {
