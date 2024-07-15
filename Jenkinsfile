@@ -64,8 +64,9 @@ pipeline {
             }
             steps {
                 script {
-                    sh 'apk add --no-cache jq'
+                    def authHeader = "Bearer ${GITHUB_TOKEN}"
 
+                    // Create Pull Request payload
                     def payload = [
                         title: "Automated Pull Request: ${env.BRANCH_NAME} -> ${MASTER_BRANCH}",
                         body: "Automated pull request created after successful tests on ${env.BRANCH_NAME}.",
@@ -73,36 +74,37 @@ pipeline {
                         base: MASTER_BRANCH
                     ]
 
-                    def authHeader = "Bearer ${GITHUB_TOKEN}"
-                    def response = sh(
-                        script: "curl -X POST -H 'Authorization: ${authHeader}' -H 'Content-Type: application/json' -d '${groovy.json.JsonOutput.toJson(payload)}' 'https://api.github.com/repos/Joffe2001/playlist-app/pulls'",
+                    // Send POST request to create pull request
+                    def createPRResponse = sh(
+                        script: "curl -sS -X POST -H 'Authorization: ${authHeader}' -H 'Content-Type: application/json' -d '${groovy.json.JsonOutput.toJson(payload)}' 'https://api.github.com/repos/${GITHUB_REPO}/pulls'",
                         returnStdout: true
                     ).trim()
 
-                    echo "Created Pull Request: ${response}"
+                    echo "Created Pull Request: ${createPRResponse}"
 
-                    if (response.contains('Bad credentials')) {
-                        error "Failed to create pull request. Bad credentials."
+                    // Parse response to get PR number
+                    def prNumber = createPRResponse ? createPRResponse.readJSON().number : null
+
+                    if (prNumber == null) {
+                        error "Failed to get pull request number from GitHub API response."
                     }
 
-                    // Extract PR number from response if needed
-                    def prNumber = sh(script: "echo '${response}' | jq -r '.number'", returnStdout: true).trim()
-
-                    // Merge the pull request
+                    // Merge Pull Request payload
                     def mergePayload = [
                         commit_title: "Merge Pull Request",
                         merge_method: "merge"
                     ]
 
-                    def mergeResponse = sh(
-                        script: "curl -X POST -H 'Authorization: ${authHeader}' -H 'Content-Type: application/json' -d '${groovy.json.JsonOutput.toJson(mergePayload)}' 'https://api.github.com/repos/Joffe2001/playlist-app/pulls/${prNumber}/merge'",
+                    // Send POST request to merge pull request
+                    def mergePRResponse = sh(
+                        script: "curl -sS -X POST -H 'Authorization: ${authHeader}' -H 'Content-Type: application/json' -d '${groovy.json.JsonOutput.toJson(mergePayload)}' 'https://api.github.com/repos/${GITHUB_REPO}/pulls/${prNumber}/merge'",
                         returnStdout: true
                     ).trim()
 
-                    echo "Merged Pull Request: ${mergeResponse}"
+                    echo "Merged Pull Request: ${mergePRResponse}"
 
-                    if (!mergeResponse.contains('merged')) {
-                        error "Failed to merge pull request."
+                    if (mergePRResponse.contains('Not Found')) {
+                        error "Failed to merge pull request. Check GitHub repository URL or permissions."
                     }
                 }
             }
