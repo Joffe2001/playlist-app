@@ -204,7 +204,7 @@ pipeline {
                             curl -sS -X POST \
                             -H 'Authorization: ${authHeader}' \
                             -H 'Content-Type: application/gzip' \
-                            --data-binary @helm-chart-${version}.tgz \
+                            --data-binary @helm-chart/helm-chart-${version}.tgz \
                             ${uploadUrl}
                             """,
                             returnStdout: true
