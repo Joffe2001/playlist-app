@@ -10,7 +10,6 @@ pipeline {
         DOCKER_REGISTRY = 'https://registry.hub.docker.com'
         GITHUB_REPO = 'Joffe2001/playlist-app'
         MASTER_BRANCH = 'master'
-        GITHUB_TOKEN = credentials('github-token')
     }
 
     stages {
@@ -64,49 +63,51 @@ pipeline {
             }
             steps {
                 script {
-                    def authHeader = "Bearer ${GITHUB_TOKEN}"
+                    withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
+                        def authHeader = "Bearer ${GITHUB_TOKEN}"
 
-                    // Create Pull Request payload
-                    def payload = [
-                        title: "Automated Pull Request: ${env.BRANCH_NAME} -> ${MASTER_BRANCH}",
-                        body: "Automated pull request created after successful tests on ${env.BRANCH_NAME}.",
-                        head: env.BRANCH_NAME,
-                        base: MASTER_BRANCH
-                    ]
+                        // Create Pull Request payload
+                        def payload = [
+                            title: "Automated Pull Request: ${env.BRANCH_NAME} -> ${MASTER_BRANCH}",
+                            body: "Automated pull request created after successful tests on ${env.BRANCH_NAME}.",
+                            head: env.BRANCH_NAME,
+                            base: MASTER_BRANCH
+                        ]
 
-                    // Send POST request to create pull request
-                    def createPRResponse = sh(
-                        script: "curl -sS -X POST -H 'Authorization: ${authHeader}' -H 'Content-Type: application/json' -d '${groovy.json.JsonOutput.toJson(payload)}' 'https://api.github.com/repos/${GITHUB_REPO}/pulls'",
-                        returnStdout: true
-                    ).trim()
+                        // Send POST request to create pull request
+                        def createPRResponse = sh(
+                            script: "curl -sS -X POST -H 'Authorization: ${authHeader}' -H 'Content-Type: application/json' -d '${groovy.json.JsonOutput.toJson(payload)}' 'https://api.github.com/repos/${GITHUB_REPO}/pulls'",
+                            returnStdout: true
+                        ).trim()
 
-                    echo "Created Pull Request: ${createPRResponse}"
+                        echo "Created Pull Request: ${createPRResponse}"
 
-                    // Parse response to check for errors
-                    def responseJson = readJSON text: createPRResponse
+                        // Parse response to check for errors
+                        def responseJson = readJSON text: createPRResponse
 
-                    if (responseJson.message) {
-                        error "Failed to create pull request: ${responseJson.message}"
-                    }
+                        if (responseJson.message) {
+                            error "Failed to create pull request: ${responseJson.message}"
+                        }
 
-                    def prNumber = responseJson.number ?: error("Failed to retrieve pull request number.")
+                        def prNumber = responseJson.number ?: error("Failed to retrieve pull request number.")
 
-                    // Merge Pull Request payload
-                    def mergePayload = [
-                        commit_title: "Merge Pull Request",
-                        merge_method: "merge"
-                    ]
+                        // Merge Pull Request payload
+                        def mergePayload = [
+                            commit_title: "Merge Pull Request",
+                            merge_method: "merge"
+                        ]
 
-                    // Send POST request to merge pull request
-                    def mergePRResponse = sh(
-                        script: "curl -sS -X POST -H 'Authorization: ${authHeader}' -H 'Content-Type: application/json' -d '${groovy.json.JsonOutput.toJson(mergePayload)}' 'https://api.github.com/repos/${GITHUB_REPO}/pulls/${prNumber}/merge'",
-                        returnStdout: true
-                    ).trim()
+                        // Send POST request to merge pull request
+                        def mergePRResponse = sh(
+                            script: "curl -sS -X POST -H 'Authorization: ${authHeader}' -H 'Content-Type: application/json' -d '${groovy.json.JsonOutput.toJson(mergePayload)}' 'https://api.github.com/repos/${GITHUB_REPO}/pulls/${prNumber}/merge'",
+                            returnStdout: true
+                        ).trim()
 
-                    echo "Merged Pull Request: ${mergePRResponse}"
+                        echo "Merged Pull Request: ${mergePRResponse}"
 
-                    if (mergePRResponse.contains('Not Found')) {
-                        error "Failed to merge pull request. Check GitHub repository URL or permissions."
+                        if (mergePRResponse.contains('Not Found')) {
+                            error "Failed to merge pull request. Check GitHub repository URL or permissions."
+                        }
                     }
                 }
             }
