@@ -89,7 +89,7 @@ pipeline {
 
                             echo "Existing PR Response: ${existingPRResponse}"
 
-                            def existingPR = readJSON text: existingPRResponse
+                            def existingPR = new groovy.json.JsonSlurper().parseText(existingPRResponse)
                             def prNumber = null
 
                             if (existingPR.size() > 0) {
