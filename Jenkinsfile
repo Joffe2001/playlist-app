@@ -10,6 +10,7 @@ pipeline {
         DOCKER_REGISTRY = 'https://registry.hub.docker.com'
         GITHUB_REPO = 'Joffe2001/playlist-app'
         MASTER_BRANCH = 'master'
+        GITHUB_TOKEN = credentials('github-token')
     }
 
     stages {
@@ -59,9 +60,7 @@ pipeline {
 
         stage('Create Pull Request') {
             when {
-                expression {
-                    env.BRANCH_NAME == 'issue'
-                }
+                branch 'issue'
             }
             steps {
                 script {
@@ -72,42 +71,36 @@ pipeline {
                         base: MASTER_BRANCH
                     ]
 
-                    def authToken = "Bearer ${env.GITHUB_TOKEN}"
-                    def apiUrl = "https://api.github.com/repos/${GITHUB_REPO}/pulls"
-                    
-                    def curlCommand = "curl -X POST ${apiUrl} \
-                                      -H 'Authorization: ${authToken}' \
-                                      -H 'Content-Type: application/json' \
-                                      -d '${groovy.json.JsonOutput.toJson(payload)}'"
-                    
-                    def response = sh(script: curlCommand, returnStdout: true).trim()
-                    
+                    def authHeader = "Bearer ${GITHUB_TOKEN}"
+                    def response = sh(
+                        script: "curl -X POST -H 'Authorization: ${authHeader}' -H 'Content-Type: application/json' -d '${groovy.json.JsonOutput.toJson(payload)}' 'https://api.github.com/repos/Joffe2001/playlist-app/pulls'",
+                        returnStdout: true
+                    ).trim()
+
                     echo "Created Pull Request: ${response}"
 
-                    if (response.contains('created_at')) {
-                        def prNumber = groovy.json.JsonSlurperClassic().parseText(response).number
+                    if (response.contains('Bad credentials')) {
+                        error "Failed to create pull request. Bad credentials."
+                    }
 
-                        def mergePayload = [
-                            commit_title: "Merge Pull Request",
-                            merge_method: "merge"
-                        ]
+                    // Extract PR number from response if needed
+                    def prNumber = sh(script: "echo '${response}' | jq -r '.number'", returnStdout: true).trim()
 
-                        def mergeUrl = "https://api.github.com/repos/${GITHUB_REPO}/pulls/${prNumber}/merge"
+                    // Merge the pull request
+                    def mergePayload = [
+                        commit_title: "Merge Pull Request",
+                        merge_method: "merge"
+                    ]
 
-                        def mergeCurlCommand = "curl -X POST ${mergeUrl} \
-                                                -H 'Authorization: ${authToken}' \
-                                                -H 'Content-Type: application/json' \
-                                                -d '${groovy.json.JsonOutput.toJson(mergePayload)}'"
-                        
-                        def mergeResponse = sh(script: mergeCurlCommand, returnStdout: true).trim()
-                        
-                        echo "Merged Pull Request: ${mergeResponse}"
-                        
-                        if (!mergeResponse.contains('merged_at')) {
-                            error "Failed to merge pull request."
-                        }
-                    } else {
-                        error "Failed to create pull request."
+                    def mergeResponse = sh(
+                        script: "curl -X POST -H 'Authorization: ${authHeader}' -H 'Content-Type: application/json' -d '${groovy.json.JsonOutput.toJson(mergePayload)}' 'https://api.github.com/repos/Joffe2001/playlist-app/pulls/${prNumber}/merge'",
+                        returnStdout: true
+                    ).trim()
+
+                    echo "Merged Pull Request: ${mergeResponse}"
+
+                    if (!mergeResponse.contains('merged')) {
+                        error "Failed to merge pull request."
                     }
                 }
             }
