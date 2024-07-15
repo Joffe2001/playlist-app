@@ -167,7 +167,7 @@ pipeline {
             steps {
                 script {
                     def version = "v1.${env.BUILD_NUMBER}"
-                    docker.withRegistry('https://registry.hub.docker.com', '8cd550f2-e8f1-48d2-92c5-3ba53781d322') {
+                    docker.withRegistry('https://registry.hub.docker.com', 'docker-joffe-credential') {
                         dockerImage.push(version)
                     }
                     sh "helm package src/helm-chart/ --version ${version}"
