@@ -23,7 +23,8 @@ pipeline {
         stage('Setup Environment') {
             steps {
                 sh 'apk update'
-                sh 'apk add py3-pip'
+                sh 'apk add py3-pip jq'
+                sh 'jq --version'
                 sh 'pip install --upgrade pip'
                 dir('src') {
                     sh 'pip install -r requirements.txt'
