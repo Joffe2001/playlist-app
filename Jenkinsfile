@@ -64,6 +64,8 @@ pipeline {
             }
             steps {
                 script {
+                    sh 'apk add --no-cache jq'
+
                     def payload = [
                         title: "Automated Pull Request: ${env.BRANCH_NAME} -> ${MASTER_BRANCH}",
                         body: "Automated pull request created after successful tests on ${env.BRANCH_NAME}.",
