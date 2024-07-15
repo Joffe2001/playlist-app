@@ -84,19 +84,6 @@ pipeline {
 
                     echo "Created Pull Request: ${response.content}"
 
-                    def prNumber = response.data.number 
-                    httpRequest(
-                        acceptType: 'APPLICATION_JSON',
-                        contentType: 'APPLICATION_JSON',
-                        httpMode: 'POST',
-                        requestBody: groovy.json.JsonOutput.toJson([]),
-                        url: "https://api.github.com/repos/Joffe2001/playlist-app/pulls/${prNumber}/merge",
-                        headers: [
-                            Authorization: "token ${GITHUB_TOKEN}"
-                        ]
-                    )
-                    echo "Created Pull Request: ${response.content}"
-
                     if (response.status != 201) {
                         error "Failed to create pull request. HTTP status: ${response.status}"
                     }
