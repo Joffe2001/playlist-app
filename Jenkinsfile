@@ -83,9 +83,8 @@ pipeline {
                     echo "Created Pull Request: ${createPRResponse}"
 
                     // Parse response to check for errors
-                    def jsonResponse = createPRResponse.readLines().join('\n')
-                    def responseJson = new JsonSlurperClassic().parseText(jsonResponse)
-
+                    def responseJson = createPRResponse.readJSON()
+                    
                     if (responseJson.message) {
                         error "Failed to create pull request: ${responseJson.message}"
                     }
