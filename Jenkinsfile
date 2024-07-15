@@ -119,7 +119,7 @@ pipeline {
                                     curl -sS -X POST \
                                     -H 'Authorization: ${authHeader}' \
                                     -H 'Content-Type: application/json' \
-                                    -d '${groovy.json.JsonOutput.toJson(payload)}' \
+                                    -d '${payloadJson}' \
                                     https://api.github.com/repos/${GITHUB_REPO}/pulls
                                     """,
                                     returnStdout: true
