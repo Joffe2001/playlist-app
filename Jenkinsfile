@@ -16,6 +16,7 @@ pipeline {
         stage('Checkout Code') {
             steps {
                 checkout scm
+                sh 'git config --global --add safe.directory ${WORKSPACE}'
             }
         }
 
@@ -40,88 +41,116 @@ pipeline {
             steps {
                 script {
                     def version = "v1.${env.BUILD_NUMBER}"
-                    def dockerImage = docker.build("joffe2001/playlist-app:${version}", "-f ./src/Dockerfile ./src")
+                    docker.build("joffe2001/playlist-app:${version}", "-f ./src/Dockerfile ./src")
                 }
             }
         }
 
-        stage('Check Token Permissions') {
-            steps {
-                script {
-                    withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
-                        sh """
-                        curl -I -H "Authorization: token ${GITHUB_TOKEN}" https://api.github.com/user
-                        """
-                    }
-                }
-            }
-        }
-
-        stage('Create Pull Request') {
+        stage('Create or Find Pull Request') {
             when {
                 branch 'issue'
             }
             steps {
                 script {
                     withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
-                        def authHeader = "Authorization: token ${GITHUB_TOKEN}"
+                        def authHeader = "token ${GITHUB_TOKEN}"
                         
-                        // Create Pull Request payload
-                        def payload = [
-                            title: "Automated Pull Request: ${env.BRANCH_NAME} -> ${env.MASTER_BRANCH}",
-                            body: "Automated pull request created after successful tests on ${env.BRANCH_NAME}.",
-                            head: env.BRANCH_NAME,
-                            base: env.MASTER_BRANCH
-                        ]
+                        // Check if the issue branch exists
+                        def branchExists = sh(
+                            script: "git ls-remote --heads origin ${env.BRANCH_NAME}",
+                            returnStatus: true
+                        )
 
-                        echo "GitHub Repo: ${GITHUB_REPO}" // Debugging output
-
-                        // Send POST request to create pull request
-                        def createPRResponse = sh(
-                            script: """
-                            curl -sS -X POST \
-                            -H '${authHeader}' \
-                            -H 'Content-Type: application/json' \
-                            -d '${groovy.json.JsonOutput.toJson(payload)}' \
-                            https://api.github.com/repos/${GITHUB_REPO}/pulls
-                            """,
-                            returnStdout: true
-                        ).trim()
-
-                        echo "Created Pull Request: ${createPRResponse}"
-
-                        // Check for errors in the response
-                        if (createPRResponse.contains('"message":')) {
-                            error "Failed to create pull request: ${createPRResponse}"
+                        if (branchExists != 0) {
+                            error "Branch ${env.BRANCH_NAME} does not exist on remote."
                         }
 
-                        // Extract pull request number
-                        def prNumber = sh(script: "echo ${createPRResponse} | grep -oP '\"number\":\\s*\\K\\d+'", returnStdout: true).trim()
-                        prNumber = prNumber ?: error("Failed to retrieve pull request number.")
-
-                        // Merge Pull Request payload
-                        def mergePayload = [
-                            commit_title: "Merge Pull Request",
-                            merge_method: "merge"
-                        ]
-
-                        // Send POST request to merge pull request
-                        def mergePRResponse = sh(
+                        // Check if there are changes between issue and master
+                        def changes = sh(
                             script: """
-                            curl -sS -X POST \
-                            -H '${authHeader}' \
-                            -H 'Content-Type: application/json' \
-                            -d '${groovy.json.JsonOutput.toJson(mergePayload)}' \
-                            https://api.github.com/repos/${GITHUB_REPO}/pulls/${prNumber}/merge
+                            git diff --name-only origin/${env.MASTER_BRANCH} -- origin/${env.BRANCH_NAME}
                             """,
                             returnStdout: true
                         ).trim()
 
-                        echo "Merged Pull Request: ${mergePRResponse}"
+                        if (changes) {
+                            // Check for existing pull request
+                            def existingPRResponse = sh(
+                                script: """
+                                curl -sS -H 'Authorization: ${authHeader}' \
+                                -H 'Content-Type: application/json' \
+                                https://api.github.com/repos/${GITHUB_REPO}/pulls?head=Joffe2001:${env.BRANCH_NAME}&base=${env.MASTER_BRANCH}
+                                """,
+                                returnStdout: true
+                            ).trim()
 
-                        // Check for merge errors in the response
-                        if (mergePRResponse.contains('"message": "Not Found"')) {
-                            error "Failed to merge pull request. Check GitHub repository URL or permissions."
+                            echo "Existing PR Response: ${existingPRResponse}"
+
+                            def existingPR = readJSON text: existingPRResponse
+                            def prNumber = null
+
+                            if (existingPR.size() > 0) {
+                                prNumber = existingPR[0].number
+                                echo "Found existing PR: ${prNumber}"
+                            } else {
+                                // Create Pull Request payload
+                                def payload = [
+                                    title: "Automated Pull Request: ${env.BRANCH_NAME} -> ${env.MASTER_BRANCH}",
+                                    body: "Automated pull request created after successful tests on ${env.BRANCH_NAME}.",
+                                    head: env.BRANCH_NAME,
+                                    base: env.MASTER_BRANCH
+                                ]
+
+                                // Send POST request to create pull request
+                                def createPRResponse = sh(
+                                    script: """
+                                    curl -sS -X POST \
+                                    -H 'Authorization: ${authHeader}' \
+                                    -H 'Content-Type: application/json' \
+                                    -d '${groovy.json.JsonOutput.toJson(payload)}' \
+                                    https://api.github.com/repos/${GITHUB_REPO}/pulls
+                                    """,
+                                    returnStdout: true
+                                ).trim()
+
+                                echo "Created Pull Request: ${createPRResponse}"
+
+                                // Check for errors in the response
+                                if (createPRResponse.contains('"message":')) {
+                                    error "Failed to create pull request: ${createPRResponse}"
+                                }
+
+                                // Extract pull request number
+                                prNumber = sh(script: "echo ${createPRResponse} | grep -oP '\"number\":\\s*\\K\\d+'", returnStdout: true).trim()
+                                prNumber = prNumber ?: error("Failed to retrieve pull request number.")
+                            }
+
+                            // Merge Pull Request payload
+                            def mergePayload = [
+                                commit_title: "Merge Pull Request",
+                                merge_method: "merge"
+                            ]
+
+                            // Send POST request to merge pull request
+                            def mergePRResponse = sh(
+                                script: """
+                                curl -sS -X POST \
+                                -H 'Authorization: ${authHeader}' \
+                                -H 'Content-Type: application/json' \
+                                -d '${groovy.json.JsonOutput.toJson(mergePayload)}' \
+                                https://api.github.com/repos/${GITHUB_REPO}/pulls/${prNumber}/merge
+                                """,
+                                returnStdout: true
+                            ).trim()
+
+                            echo "Merged Pull Request: ${mergePRResponse}"
+
+                            // Check for merge errors in the response
+                            if (mergePRResponse.contains('"message": "Not Found"')) {
+                                error "Failed to merge pull request. Check GitHub repository URL or permissions."
+                            }
+                        } else {
+                            echo "No changes between ${env.BRANCH_NAME} and ${env.MASTER_BRANCH}. Skipping pull request creation."
                         }
                     }
                 }
