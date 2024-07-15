@@ -166,7 +166,7 @@ pipeline {
                             }
 
                             // Check for merge errors in the response
-                            if (mergedPR?.message: "Not Found") {
+                            if (mergedPR?.message == "Not Found") {
                                 error "Failed to merge pull request. Check GitHub repository URL or permissions."
                             }
                         } else {
