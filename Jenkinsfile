@@ -69,7 +69,7 @@ pipeline {
                         // Check if there are changes between feature and master
                         def changes = sh(
                             script: """
-                            git diff --name-only origin/${env.MASTER_BRANCH} -- origin/${env.BRANCH_NAME}
+                            git diff --name-only origin/${env.MASTER_BRANCH}..origin/${env.BRANCH_NAME}
                             """,
                             returnStdout: true
                         ).trim()
