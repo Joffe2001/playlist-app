@@ -1,0 +1,22 @@
+joffeapp:
+  replicas: 3
+  image: 
+    repository: joffe2001/playlist-app
+    tag: latest
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+  service:
+    type: ClusterIP
+    port: 5000
+  env:
+    MONGODB_URI: "mongodb://root:rootroot@mongodb:27017/"
+    MONGODB_SERVER: "mongodb"
+    MONGODB_PORT: 27017
+    MONGODB_DATABASE: "project"
+    MONGODB_USER: "root"
+    MONGODB_PASSWORD: "rootroot"

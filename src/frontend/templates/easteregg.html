@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}Easter Egg{% endblock %}
+
+{% block main %}
+<style>
+    /* Animated rainbow colors for title */
+    @keyframes rainbow {
+      0% { color: #ff0000; }
+      15% { color: #ff7f00; }
+      30% { color: #ffff00; }
+      45% { color: #00ff00; }
+      60% { color: #0000ff; }
+      75% { color: #4b0082; }
+      90% { color: #8b00ff; }
+      100% { color: #ff0000; }
+    }
+  
+    .rainbow-text {
+      font-size: 2.5rem;
+      font-weight: bold;
+      animation: rainbow 3s infinite;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+</style>
+
+<div class="text-center">
+    <!-- Easter egg message -->
+    <h1 class="rainbow-text">Congratulations! You've found the Easter egg!</h1>
+    
+    <!-- Play audio automatically when the page loads -->
+    <audio id="easterAudio" autoplay>
+        <source src="/static/audio/easteregg.mp3" type="audio/mp3">
+        Your browser does not support the audio element.
+    </audio>
+
+    <!-- Button to redirect to LinkedIn -->
+    <a href="https://www.linkedin.com/in/idojoffe/" target="_blank" class="btn btn-primary btn-lg mt-3">Link to my Linkdin</a>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+    // Script to stop audio when leaving the page (optional)
+    window.onbeforeunload = function() {
+        var audio = document.getElementById('easterAudio');
+        audio.pause();
+    };
+</script>
+{% endblock %}

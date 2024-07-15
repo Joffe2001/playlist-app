@@ -1,0 +1,10 @@
+flask
+Flask
+pytest
+pytest-flask
+pymongo
+bcrypt
+flask_login
+passlib==1.7.4
+flask_testing
+mongomock

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}All Profiles{% endblock %}
+
+{% block main %}
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    {% for user in users %}
+    <div class="col-md-4 mb-4">
+      <div class="card profile-card shadow-sm">
+        <div class="card-body text-center">
+          {% if user.profile_pic %}
+          <img src="{{ url_for('static', filename=user.profile_pic) }}"
+               alt="{{ user.username }} profile picture"
+               class="profile-picture mb-3 rounded-circle"
+               style="max-width: 150px; max-height: 150px;">
+          {% else %}
+          <img src="{{ url_for('static', filename='default_profile_pic.jpg') }}"
+               alt="Default Profile Picture"
+               class="profile-picture mb-3 rounded-circle"
+               style="max-width: 150px; max-height: 150px;">
+          {% endif %}
+          <h5>{{ user.username }}</h5>
+          <p>{{ user.first_name }} {{ user.last_name }}</p>
+          <p class="text-muted">{{ user.email }}</p>
+          <a href="{{ url_for('views.profile', username=user.username) }}" class="btn btn-primary">View Profile</a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
