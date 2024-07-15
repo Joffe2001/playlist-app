@@ -10,7 +10,6 @@ pipeline {
         DOCKER_REGISTRY = 'https://registry.hub.docker.com'
         GITHUB_REPO = 'Joffe2001/playlist-app'
         MASTER_BRANCH = 'master'
-        GITHUB_TOKEN = credentials('github-token')
     }
 
     stages {
@@ -73,44 +72,43 @@ pipeline {
                         base: MASTER_BRANCH
                     ]
 
-                    def response = httpRequest(
-                        acceptType: 'APPLICATION_JSON',
-                        contentType: 'APPLICATION_JSON',
-                        httpMode: 'POST',
-                        requestBody: groovy.json.JsonOutput.toJson(payload),
-                        url: "https://api.github.com/repos/${GITHUB_REPO}/pulls",
-                        authentication: 'Basic',
-                        credentialsId: 'github-token'
-                    )
+                    def authToken = "Bearer ${env.GITHUB_TOKEN}"
+                    def apiUrl = "https://api.github.com/repos/${GITHUB_REPO}/pulls"
+                    
+                    def curlCommand = "curl -X POST ${apiUrl} \
+                                      -H 'Authorization: ${authToken}' \
+                                      -H 'Content-Type: application/json' \
+                                      -d '${groovy.json.JsonOutput.toJson(payload)}'"
+                    
+                    def response = sh(script: curlCommand, returnStdout: true).trim()
+                    
+                    echo "Created Pull Request: ${response}"
 
-                    echo "Created Pull Request: ${response.content}"
+                    if (response.contains('created_at')) {
+                        def prNumber = groovy.json.JsonSlurperClassic().parseText(response).number
 
-                    if (response.status != 201) {
-                        error "Failed to create pull request. HTTP status: ${response.status}"
+                        def mergePayload = [
+                            commit_title: "Merge Pull Request",
+                            merge_method: "merge"
+                        ]
+
+                        def mergeUrl = "https://api.github.com/repos/${GITHUB_REPO}/pulls/${prNumber}/merge"
+
+                        def mergeCurlCommand = "curl -X POST ${mergeUrl} \
+                                                -H 'Authorization: ${authToken}' \
+                                                -H 'Content-Type: application/json' \
+                                                -d '${groovy.json.JsonOutput.toJson(mergePayload)}'"
+                        
+                        def mergeResponse = sh(script: mergeCurlCommand, returnStdout: true).trim()
+                        
+                        echo "Merged Pull Request: ${mergeResponse}"
+                        
+                        if (!mergeResponse.contains('merged_at')) {
+                            error "Failed to merge pull request."
+                        }
+                    } else {
+                        error "Failed to create pull request."
                     }
-
-                    def prNumber = response.data.number
-
-                    def mergePayload = [
-                        commit_title: "Merge Pull Request",
-                        merge_method: "merge"
-                    ]
-
-                    def mergeResponse = httpRequest(
-                        acceptType: 'APPLICATION_JSON',
-                        contentType: 'APPLICATION_JSON',
-                        httpMode: 'POST',
-                        requestBody: groovy.json.JsonOutput.toJson(mergePayload),
-                        url: "https://api.github.com/repos/${GITHUB_REPO}/pulls/${prNumber}/merge",
-                        authentication: 'Basic',
-                        credentialsId: 'github-token'
-                    )
-
-                    if (mergeResponse.status != 200) {
-                        error "Failed to merge pull request. HTTP status: ${mergeResponse.status}"
-                    }
-
-                    echo "Merged Pull Request: ${mergeResponse.content}"
                 }
             }
         }
