@@ -74,6 +74,8 @@ pipeline {
                             returnStdout: true
                         ).trim()
 
+                        echo "Changes:\n${changes}"
+
                         if (changes) {
                             // Check for existing pull request
                             def existingPRResponse = sh(
