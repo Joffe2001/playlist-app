@@ -156,10 +156,17 @@ pipeline {
                                 returnStdout: true
                             ).trim()
 
-                            echo "Merged Pull Request: ${mergePRResponse}"
+                            echo "Merge PR Response: ${mergePRResponse}"
+
+                            def mergedPR = null
+                            try {
+                                mergedPR = new groovy.json.JsonSlurper().parseText(mergePRResponse)
+                            } catch (Exception e) {
+                                error "Failed to parse merge PR response: ${e.message}\nResponse: ${mergePRResponse}"
+                            }
 
                             // Check for merge errors in the response
-                            if (mergePRResponse.contains('"message": "Not Found"')) {
+                            if (mergedPR?.message: "Not Found") {
                                 error "Failed to merge pull request. Check GitHub repository URL or permissions."
                             }
                         } else {
