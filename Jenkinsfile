@@ -69,7 +69,7 @@ pipeline {
                         def changes = sh(
                             script: """
                             git fetch origin ${env.MASTER_BRANCH}
-                            git diff --name-only origin/${env.MASTER_BRANCH}..${env.BRANCH_NAME}
+                            git diff --name-only origin/${env.MASTER_BRANCH}. -- origin/${env.BRANCH_NAME}
                             """,
                             returnStdout: true
                         ).trim()
