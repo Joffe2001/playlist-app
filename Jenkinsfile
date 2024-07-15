@@ -159,16 +159,20 @@ pipeline {
 
         stage('Push Docker Image and HELM Package') {
             when {
-                branch MASTER_BRANCH
+                anyOf {
+                    branch 'master'
+                    changeset "branches: [${MASTER_BRANCH}]"
+                }
             }
             steps {
                 script {
                     def version = "v1.${env.BUILD_NUMBER}"
-                    docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-credentials') {
-                        sh "helm package src/helm-chart/ --version ${version}"
-                        sh "helm repo index --url https://github.com/${GITHUB_REPO}/tree/master/src/helm-chart/ --merge src/helm-chart/index.yaml"
-                        sh "helm push src/helm-chart-${version}.tgz https://github.com/${GITHUB_REPO}/tree/master/src/helm-chart/"
+                    docker.withRegistry('https://registry.hub.docker.com', '8cd550f2-e8f1-48d2-92c5-3ba53781d322') {
+                        dockerImage.push(version)
                     }
+                    sh "helm package src/helm-chart/ --version ${version}"
+                    sh "helm repo index --url https://github.com/${GITHUB_REPO}/tree/master/src/helm-chart/ --merge src/helm-chart/index.yaml"
+                    sh "helm push src/helm-chart-${version}.tgz https://github.com/${GITHUB_REPO}/tree/master/src/helm-chart/"
                 }
             }
         }
