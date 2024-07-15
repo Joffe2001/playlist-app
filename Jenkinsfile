@@ -164,7 +164,7 @@ pipeline {
             steps {
                 script {
                     def version = "v1.${env.BUILD_NUMBER}"
-                    docker.withRegistry('https://registry.hub.docker.com', 'docker-joffe-credential') {
+                    docker.withRegistry('https://registry.hub.docker.com', '8cd550f2-e8f1-48d2-92c5-3ba53781d322') {
                         dockerImage.push(version)
                     }
                     sh "helm package helm-chart/ --version ${version}"
@@ -180,7 +180,7 @@ pipeline {
                             curl -sS -X POST \
                             -H 'Authorization: ${authHeader}' \
                             -H 'Content-Type: application/json' \
-                            -d '{\"tag_name\": \"${tagName}\", \"name\": \"${releaseName}\", \"body\": \"Automated release for ${tagName}\"}' \
+                            -d '{"tag_name": "${tagName}", "name": "${releaseName}", "body": "Automated release for ${tagName}"}' \
                             https://api.github.com/repos/${GITHUB_REPO}/releases
                             """,
                             returnStdout: true
@@ -194,7 +194,7 @@ pipeline {
                         }
 
                         // Extract release ID
-                        def releaseId = sh(script: "echo ${createReleaseResponse} | grep -oP '\"id\":\\s*\\K\\d+'", returnStdout: true).trim()
+                        def releaseId = sh(script: "echo '${createReleaseResponse}' | grep -oP '\"id\":\\s*\\K\\d+'", returnStdout: true).trim()
                         releaseId = releaseId ?: error("Failed to retrieve release ID.")
 
                         // Upload Helm chart to release
