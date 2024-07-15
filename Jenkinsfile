@@ -165,17 +165,21 @@ pipeline {
             steps {
                 script {
                     def version = "v1.${env.BUILD_NUMBER}"
-                    docker.withRegistry('https://registry.hub.docker.com', 'docker-joffe-credential') {
+                    docker.withRegistry('https://registry.hub.docker.com', '8cd550f2-e8f1-48d2-92c5-3ba53781d322') {
                         dockerImage.push(version)
                     }
                     sh "helm package helm-chart/ --version ${version}"
-                    sh "helm repo index helm-chart/ --url https://github.com/${GITHUB_REPO}/tree/master/helm-chart/"
 
-                    // Check if the Helm chart package exists and is not empty
-                    def helmChartPath = "helm-chart/helm-chart-${version}.tgz"
+                    // Verify the Helm package was created successfully
+                    def helmChartPath = "${WORKSPACE}/joffeapp-${version}.tgz"
                     if (!fileExists(helmChartPath)) {
                         error "Helm chart package ${helmChartPath} does not exist."
+                    } else {
+                        echo "Helm chart package ${helmChartPath} created successfully."
                     }
+
+                    sh "ls -lh ${helmChartPath}" // List the details of the created package
+                    sh "helm repo index helm-chart/ --url https://github.com/${GITHUB_REPO}/tree/master/helm-chart/"
 
                     // Upload the Helm chart to GitHub Release
                     withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
