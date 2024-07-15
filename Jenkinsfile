@@ -68,8 +68,7 @@ pipeline {
                         // Check if there are changes between issue and master
                         def changes = sh(
                             script: """
-                            git fetch origin ${env.MASTER_BRANCH}
-                            git diff --name-only origin/${env.MASTER_BRANCH}. -- origin/${env.BRANCH_NAME}
+                            git diff --name-only origin/${env.MASTER_BRANCH} -- origin/${env.BRANCH_NAME}
                             """,
                             returnStdout: true
                         ).trim()
