@@ -55,6 +55,16 @@ pipeline {
                     withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
                         def authHeader = "token ${GITHUB_TOKEN}"
                         
+                        // Check if the issue branch exists
+                        def branchExists = sh(
+                            script: "git ls-remote --heads origin ${env.BRANCH_NAME}",
+                            returnStatus: true
+                        )
+
+                        if (branchExists != 0) {
+                            error "Branch ${env.BRANCH_NAME} does not exist on remote."
+                        }
+
                         // Check if there are changes between issue and master
                         def changes = sh(
                             script: """
@@ -70,7 +80,7 @@ pipeline {
                                 script: """
                                 curl -sS -H 'Authorization: ${authHeader}' \
                                 -H 'Content-Type: application/json' \
-                                https://api.github.com/repos/${GITHUB_REPO}/pulls?head=Joffe2001:issue&base=${env.MASTER_BRANCH}
+                                https://api.github.com/repos/${GITHUB_REPO}/pulls?head=Joffe2001:${env.BRANCH_NAME}&base=${env.MASTER_BRANCH}
                                 """,
                                 returnStdout: true
                             ).trim()
