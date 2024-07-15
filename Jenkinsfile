@@ -55,8 +55,8 @@ pipeline {
                 script {
                     withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
                         // Export the token as an environment variable for the sh steps
-                        sh 'export GITHUB_TOKEN=${GITHUB_TOKEN}'
-                        
+                        def authHeader = "Authorization: token ${GITHUB_TOKEN}"
+
                         // Check if the feature branch exists
                         def branchExists = sh(
                             script: "git ls-remote --heads origin ${env.BRANCH_NAME}",
@@ -81,7 +81,7 @@ pipeline {
                             // Check for existing pull request
                             def existingPRResponse = sh(
                                 script: """
-                                curl -sS -H "Authorization: token $GITHUB_TOKEN" \
+                                curl -sS -H "$authHeader" \
                                 -H "Content-Type: application/json" \
                                 "https://api.github.com/repos/${GITHUB_REPO}/pulls?head=Joffe2001:${env.BRANCH_NAME}&base=${env.MASTER_BRANCH}"
                                 """,
@@ -121,7 +121,7 @@ pipeline {
                                 def createPRResponse = sh(
                                     script: """
                                     curl -sS -X POST \
-                                    -H "Authorization: token $GITHUB_TOKEN" \
+                                    -H "$authHeader" \
                                     -H "Content-Type: application/json" \
                                     -d '${payloadJson}' \
                                     "https://api.github.com/repos/${GITHUB_REPO}/pulls"
@@ -144,7 +144,7 @@ pipeline {
                                     if (errorMessage?.contains("A pull request already exists")) {
                                         def prInfoResponse = sh(
                                             script: """
-                                            curl -sS -H "Authorization: token $GITHUB_TOKEN" \
+                                            curl -sS -H "$authHeader" \
                                             -H "Content-Type: application/json" \
                                             "https://api.github.com/repos/${GITHUB_REPO}/pulls?head=Joffe2001:${env.BRANCH_NAME}&base=${env.MASTER_BRANCH}"
                                             """,
@@ -177,7 +177,7 @@ pipeline {
                             def mergePRResponse = sh(
                                 script: """
                                 curl -sS -X POST \
-                                -H "Authorization: token $GITHUB_TOKEN" \
+                                -H "$authHeader" \
                                 -H "Content-Type: application/json" \
                                 -d '${mergePayloadJson}' \
                                 "https://api.github.com/repos/${GITHUB_REPO}/pulls/${prNumber}/merge"
