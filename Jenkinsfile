@@ -170,6 +170,14 @@ pipeline {
                     }
                     sh "helm package helm-chart/ --version ${version}"
                     sh "helm repo index helm-chart/ --url https://github.com/${GITHUB_REPO}/tree/master/helm-chart/"
+
+                    // Check if the Helm chart package exists and is not empty
+                    def helmChartPath = "helm-chart/helm-chart-${version}.tgz"
+                    if (!fileExists(helmChartPath)) {
+                        error "Helm chart package ${helmChartPath} does not exist."
+                    }
+
+                    // Upload the Helm chart to GitHub Release
                     withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
                         def authHeader = "token ${GITHUB_TOKEN}"
                         def tagName = "v${version}"
@@ -204,7 +212,7 @@ pipeline {
                             curl -sS -X POST \
                             -H 'Authorization: ${authHeader}' \
                             -H 'Content-Type: application/gzip' \
-                            --data-binary @helm-chart/helm-chart-${version}.tgz \
+                            --data-binary @${helmChartPath} \
                             ${uploadUrl}
                             """,
                             returnStdout: true
