@@ -8,7 +8,7 @@ pipeline {
 
     environment {
         DOCKER_REGISTRY = 'https://registry.hub.docker.com'
-        GITHUB_REPO = 'Joffe2001/playlist-app'
+        GITHUB_REPO = 'Joffe2001/playlist-app/'
         MASTER_BRANCH = 'master'
     }
 
@@ -99,7 +99,7 @@ pipeline {
 
                         // Send POST request to merge pull request
                         def mergePRResponse = sh(
-                            script: "curl -sS -X POST -H 'Authorization: ${authHeader}' -H 'Content-Type: application/json' -d '${groovy.json.JsonOutput.toJson(mergePayload)}' 'https://api.github.com/repos/${GITHUB_REPO}/pulls/${prNumber}/merge'",
+                            script: "curl -sS -X POST -H 'Authorization: ${authHeader}' -H 'Content-Type: application/json' -d '${groovy.json.JsonOutput.toJson(payload)}' 'https://api.github.com/repos/${GITHUB_REPO}/pulls'",
                             returnStdout: true
                         ).trim()
 
