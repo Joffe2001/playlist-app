@@ -171,7 +171,7 @@ pipeline {
                         dockerImage.push(version)
                     }
                     sh "helm package helm-chart/ --version ${version}"
-                    sh "helm repo index --url https://github.com/${GITHUB_REPO}/tree/master/helm-chart/ --merge helm-chart/index.yaml"
+                    sh "helm repo index --url https://github.com/${GITHUB_REPO}/tree/master/helm-chart/"
                     sh "helm push helm-chart-${version}.tgz https://github.com/${GITHUB_REPO}/tree/master/helm-chart/"
                 }
             }
