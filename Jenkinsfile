@@ -60,7 +60,9 @@ pipeline {
 
         stage('Create Pull Request') {
             when {
-                branch 'issue'
+                expression {
+                    env.BRANCH_NAME == 'issue'
+                }
             }
             steps {
                 script {
@@ -76,10 +78,9 @@ pipeline {
                         contentType: 'APPLICATION_JSON',
                         httpMode: 'POST',
                         requestBody: groovy.json.JsonOutput.toJson(payload),
-                        url: "https://api.github.com/repos/Joffe2001/playlist-app/pulls",
-                        headers: [
-                            Authorization: "token ${GITHUB_TOKEN}"
-                        ]
+                        url: "https://api.github.com/repos/${GITHUB_REPO}/pulls",
+                        authentication: 'Bearer',
+                        customHeaders: [[name: 'Authorization', value: "Bearer ${GITHUB_TOKEN}"]]
                     )
 
                     echo "Created Pull Request: ${response.content}"
@@ -100,10 +101,9 @@ pipeline {
                         contentType: 'APPLICATION_JSON',
                         httpMode: 'POST',
                         requestBody: groovy.json.JsonOutput.toJson(mergePayload),
-                        url: "https://api.github.com/repos/Joffe2001/playlist-app/pulls/${prNumber}/merge",
-                        headers: [
-                            Authorization: "token ${GITHUB_TOKEN}"
-                        ]
+                        url: "https://api.github.com/repos/${GITHUB_REPO}/pulls/${prNumber}/merge",
+                        authentication: 'Bearer',
+                        customHeaders: [[name: 'Authorization', value: "Bearer ${GITHUB_TOKEN}"]]
                     )
 
                     if (mergeResponse.status != 200) {
