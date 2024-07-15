@@ -76,20 +76,23 @@ pipeline {
 
                         // Send POST request to create pull request
                         def createPRResponse = sh(
-                            script: "curl -sS -X POST -H 'Authorization: ${authHeader}' -H 'Content-Type: application/json' -d '${groovy.json.JsonOutput.toJson(payload)}' 'https://api.github.com/repos/${GITHUB_REPO}/pulls'",
+                            script: """
+                            curl -sS -X POST \
+                            -H 'Authorization: ${authHeader}' \
+                            -H 'Content-Type: application/json' \
+                            -d '${groovy.json.JsonOutput.toJson(payload)}' \
+                           'https://api.github.com/repos/${GITHUB_REPO}/pulls'
+                            """,
                             returnStdout: true
                         ).trim()
 
                         echo "Created Pull Request: ${createPRResponse}"
 
-                        // Parse response to check for errors
-                        def responseJson = jsonParse(createPRResponse)
-
                         if (responseJson.message) {
                             error "Failed to create pull request: ${responseJson.message}"
                         }
-
-                        def prNumber = responseJson.number ?: error("Failed to retrieve pull request number.")
+                        def prNumber = sh(script: "echo ${createPRResponse} | grep -oP '\"number\":\\s*\\K\\d+'", returnStdout: true).trim()
+                        prNumber = prNumber ?: error("Failed to retrieve pull request number.")
 
                         // Merge Pull Request payload
                         def mergePayload = [
@@ -98,20 +101,26 @@ pipeline {
                         ]
 
                         // Send POST request to merge pull request
-                        def mergePRResponse = sh(
-                            script: "curl -sS -X POST -H 'Authorization: ${authHeader}' -H 'Content-Type: application/json' -d '${groovy.json.JsonOutput.toJson(payload)}' 'https://api.github.com/repos/${GITHUB_REPO}/pulls'",
-                            returnStdout: true
-                        ).trim()
+                def mergePRResponse = sh(
+                    script: """
+                    curl -sS -X POST \
+                    -H 'Authorization: ${authHeader}' \
+                    -H 'Content-Type: application/json' \
+                    -d '${groovy.json.JsonOutput.toJson(mergePayload)}' \
+                    'https://api.github.com/repos/${GITHUB_REPO}/pulls/${prNumber}/merge'
+                    """,
+                    returnStdout: true
+                ).trim()
 
-                        echo "Merged Pull Request: ${mergePRResponse}"
+                echo "Merged Pull Request: ${mergePRResponse}"
 
-                        if (mergePRResponse.contains('Not Found')) {
-                            error "Failed to merge pull request. Check GitHub repository URL or permissions."
-                        }
-                    }
+                if (mergePRResponse.contains('"message": "Not Found"')) {
+                    error "Failed to merge pull request. Check GitHub repository URL or permissions."
                 }
             }
         }
+    }
+}
 
         stage('Push Docker Image and HELM Package') {
             when {
