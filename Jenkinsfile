@@ -41,7 +41,7 @@ pipeline {
             steps {
                 script {
                     def version = "v1.${env.BUILD_NUMBER}"
-                    docker.build("joffe2001/playlist-app:${version}", "-f ./src/Dockerfile ./src")
+                    dockerImage = docker.build("joffe2001/playlist-app:${version}", "-f ./src/Dockerfile ./src")
                 }
             }
         }
