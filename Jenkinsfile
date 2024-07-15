@@ -142,6 +142,7 @@ pipeline {
                                 commit_title: "Merge Pull Request",
                                 merge_method: "merge"
                             ]
+                             def mergePayloadJson = groovy.json.JsonOutput.toJson(mergePayload)
 
                             // Send POST request to merge pull request
                             def mergePRResponse = sh(
@@ -149,7 +150,7 @@ pipeline {
                                 curl -sS -X POST \
                                 -H 'Authorization: ${authHeader}' \
                                 -H 'Content-Type: application/json' \
-                                -d '${groovy.json.JsonOutput.toJson(mergePayload)}' \
+                                -d '${mergePayloadJson}' \
                                 https://api.github.com/repos/${GITHUB_REPO}/pulls/${prNumber}/merge
                                 """,
                                 returnStdout: true
