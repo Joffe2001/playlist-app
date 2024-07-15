@@ -83,7 +83,12 @@ pipeline {
                     echo "Created Pull Request: ${createPRResponse}"
 
                     // Parse response to get PR number
-                    def prNumber = createPRResponse ? createPRResponse.readJSON().number : null
+                    def prNumber = null
+                    try {
+                        prNumber = createPRResponse.readJSON().number
+                    } catch (Exception e) {
+                        error "Failed to parse JSON response from GitHub API: ${e.message}"
+                    }
 
                     if (prNumber == null) {
                         error "Failed to get pull request number from GitHub API response."
