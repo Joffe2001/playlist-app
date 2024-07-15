@@ -127,14 +127,29 @@ pipeline {
 
                                 echo "Created Pull Request: ${createPRResponse}"
 
-                                // Check for errors in the response
-                                if (createPRResponse.contains('"message":')) {
-                                    error "Failed to create pull request: ${createPRResponse}"
+                                def createdPR = null
+                                try {
+                                    createdPR = new groovy.json.JsonSlurper().parseText(createPRResponse)
+                                } catch (Exception e) {
+                                    error "Failed to parse create PR response: ${e.message}\nResponse: ${createPRResponse}"
                                 }
 
-                                // Extract pull request number
-                                prNumber = sh(script: "echo ${createPRResponse} | grep -oP '\"number\":\\s*\\K\\d+'", returnStdout: true).trim()
-                                prNumber = prNumber ?: error("Failed to retrieve pull request number.")
+                                // Check for errors in the response
+                                if (createdPR?.message == "Validation Failed") {
+                                    def errorMessage = createdPR.errors?.find { it.message }?.message
+                                    if (errorMessage?.contains("A pull request already exists")) {
+                                        prNumber = createdPR.errors.find { it.message }.url.split('/').last()
+                                        echo "PR already exists: ${prNumber}"
+                                    } else {
+                                        error "Failed to create pull request: ${createdPR.message}"
+                                    }
+                                } else {
+                                    prNumber = createdPR?.number
+                                    if (!prNumber) {
+                                        error "Failed to retrieve pull request number from response: ${createPRResponse}"
+                                    }
+                                    echo "Created Pull Request: ${prNumber}"
+                                }
                             }
 
                             // Merge Pull Request payload
