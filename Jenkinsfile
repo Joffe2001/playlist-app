@@ -45,6 +45,17 @@ pipeline {
             }
         }
 
+        stage('Check Token Permissions') {
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
+                        sh """
+                        curl -I -H "Authorization: token ${GITHUB_TOKEN}" https://api.github.com/user
+                        """
+                    }
+                }
+            }
+        }
 
         stage('Create Pull Request') {
             when {
@@ -53,7 +64,7 @@ pipeline {
             steps {
                 script {
                     withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
-                        def authHeader = "Bearer ${GITHUB_TOKEN}"
+                        def authHeader = "Authorization: token ${GITHUB_TOKEN}"
                         
                         // Create Pull Request payload
                         def payload = [
@@ -63,14 +74,16 @@ pipeline {
                             base: env.MASTER_BRANCH
                         ]
 
+                        echo "GitHub Repo: ${GITHUB_REPO}" // Debugging output
+
                         // Send POST request to create pull request
                         def createPRResponse = sh(
                             script: """
                             curl -sS -X POST \
-                            -H 'Authorization: ${authHeader}' \
+                            -H '${authHeader}' \
                             -H 'Content-Type: application/json' \
                             -d '${groovy.json.JsonOutput.toJson(payload)}' \
-                            'https://api.github.com/repos/${GITHUB_REPO}/pulls'
+                            https://api.github.com/repos/${GITHUB_REPO}/pulls
                             """,
                             returnStdout: true
                         ).trim()
@@ -96,10 +109,10 @@ pipeline {
                         def mergePRResponse = sh(
                             script: """
                             curl -sS -X POST \
-                            -H 'Authorization: ${authHeader}' \
+                            -H '${authHeader}' \
                             -H 'Content-Type: application/json' \
                             -d '${groovy.json.JsonOutput.toJson(mergePayload)}' \
-                            'https://api.github.com/repos/${GITHUB_REPO}/pulls/${prNumber}/merge'
+                            https://api.github.com/repos/${GITHUB_REPO}/pulls/${prNumber}/merge
                             """,
                             returnStdout: true
                         ).trim()
