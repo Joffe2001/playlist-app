@@ -159,10 +159,7 @@ pipeline {
 
         stage('Push Docker Image and HELM Package') {
             when {
-                anyOf {
-                    branch 'master'
-                    changeset "branches: [${MASTER_BRANCH}]"
-                }
+                branch "${env.MASTER_BRANCH}"
             }
             steps {
                 script {
@@ -172,7 +169,55 @@ pipeline {
                     }
                     sh "helm package helm-chart/ --version ${version}"
                     sh "helm repo index helm-chart/ --url https://github.com/${GITHUB_REPO}/tree/master/helm-chart/"
-                    sh "helm push helm-chart-${version}.tgz https://github.com/${GITHUB_REPO}/tree/master/helm-chart/"
+                    // Upload the Helm chart to GitHub Release
+                    withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
+                        def authHeader = "token ${GITHUB_TOKEN}"
+                        def tagName = "v${version}"
+                        def releaseName = "Release ${tagName}"
+
+                        // Create GitHub Release
+                        def createReleaseResponse = sh(
+                            script: """
+                            curl -sS -X POST \
+                            -H 'Authorization: ${authHeader}' \
+                            -H 'Content-Type: application/json' \
+                            -d '{\"tag_name\": \"${tagName}\", \"name\": \"${releaseName}\", \"body\": \"Automated release for ${tagName}\"}' \
+                            https://api.github.com/repos/${GITHUB_REPO}/releases
+                            """,
+                            returnStdout: true
+                        ).trim()
+
+                        echo "Created Release: ${createReleaseResponse}"
+
+                        // Check for errors in the response
+                        if (createReleaseResponse.contains('"message":')) {
+                            error "Failed to create release: ${createReleaseResponse}"
+                        }
+
+                        // Extract release ID
+                        def releaseId = sh(script: "echo ${createReleaseResponse} | grep -oP '\"id\":\\s*\\K\\d+'", returnStdout: true).trim()
+                        releaseId = releaseId ?: error("Failed to retrieve release ID.")
+
+                        // Upload Helm chart to release
+                        def uploadUrl = "https://uploads.github.com/repos/${GITHUB_REPO}/releases/${releaseId}/assets?name=helm-chart-${version}.tgz"
+                        def uploadResponse = sh(
+                            script: """
+                            curl -sS -X POST \
+                            -H 'Authorization: ${authHeader}' \
+                            -H 'Content-Type: application/gzip' \
+                            --data-binary @helm-chart-${version}.tgz \
+                            ${uploadUrl}
+                            """,
+                            returnStdout: true
+                        ).trim()
+
+                        echo "Uploaded Helm Chart: ${uploadResponse}"
+
+                        // Check for upload errors in the response
+                        if (uploadResponse.contains('"message":')) {
+                            error "Failed to upload Helm chart: ${uploadResponse}"
+                        }
+                    }
                 }
             }
         }
