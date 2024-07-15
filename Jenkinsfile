@@ -69,10 +69,12 @@ pipeline {
                         // Check if there are changes between feature and master
                         def changes = sh(
                             script: """
-                            git diff --name-only origin/${env.MASTER_BRANCH} -- origin/${env.BRANCH_NAME}
+                            git diff --name-only origin/${env.MASTER_BRANCH}..origin/${env.BRANCH_NAME}
                             """,
                             returnStdout: true
                         ).trim()
+
+                        echo "Changes:\n${changes}"
 
                         if (changes) {
                             // Check for existing pull request
@@ -87,7 +89,16 @@ pipeline {
 
                             echo "Existing PR Response: ${existingPRResponse}"
 
-                            def existingPR = readJSON text: existingPRResponse
+                            def existingPR = []
+                            if (existingPRResponse) {
+                                try {
+                                    existingPR = new groovy.json.JsonSlurper().parseText(existingPRResponse)
+                                } catch (Exception e) {
+                                    error "Failed to parse existing PR response: ${e.message}\nResponse: ${existingPRResponse}"
+                                }
+                            } else {
+                                echo "No existing pull request found."
+                            }
                             def prNumber = null
 
                             if (existingPR.size() > 0) {
@@ -131,6 +142,7 @@ pipeline {
                                 commit_title: "Merge Pull Request",
                                 merge_method: "merge"
                             ]
+                             def mergePayloadJson = groovy.json.JsonOutput.toJson(mergePayload)
 
                             // Send POST request to merge pull request
                             def mergePRResponse = sh(
@@ -138,7 +150,7 @@ pipeline {
                                 curl -sS -X POST \
                                 -H 'Authorization: ${authHeader}' \
                                 -H 'Content-Type: application/json' \
-                                -d '${groovy.json.JsonOutput.toJson(mergePayload)}' \
+                                -d '${mergePayloadJson}' \
                                 https://api.github.com/repos/${GITHUB_REPO}/pulls/${prNumber}/merge
                                 """,
                                 returnStdout: true
