@@ -177,7 +177,7 @@ pipeline {
                             def mergePRResponse = sh(
                                 script: """
                                 curl -sS -X POST \
-                                -H "$authHeader" \
+                                -H "Authorization: token $GITHUB_TOKEN" \
                                 -H "Content-Type: application/json" \
                                 -d '${mergePayloadJson}' \
                                 "https://api.github.com/repos/${GITHUB_REPO}/pulls/${prNumber}/merge"
