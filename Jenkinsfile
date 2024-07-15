@@ -79,8 +79,8 @@ pipeline {
                         httpMode: 'POST',
                         requestBody: groovy.json.JsonOutput.toJson(payload),
                         url: "https://api.github.com/repos/${GITHUB_REPO}/pulls",
-                        authentication: 'Bearer',
-                        customHeaders: [[name: 'Authorization', value: "Bearer ${GITHUB_TOKEN}"]]
+                        authentication: 'Basic',
+                        credentialsId: 'github-token'
                     )
 
                     echo "Created Pull Request: ${response.content}"
@@ -102,8 +102,8 @@ pipeline {
                         httpMode: 'POST',
                         requestBody: groovy.json.JsonOutput.toJson(mergePayload),
                         url: "https://api.github.com/repos/${GITHUB_REPO}/pulls/${prNumber}/merge",
-                        authentication: 'Bearer',
-                        customHeaders: [[name: 'Authorization', value: "Bearer ${GITHUB_TOKEN}"]]
+                        authentication: 'Basic',
+                        credentialsId: 'github-token'
                     )
 
                     if (mergeResponse.status != 200) {
