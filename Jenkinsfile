@@ -89,7 +89,16 @@ pipeline {
 
                             echo "Existing PR Response: ${existingPRResponse}"
 
-                            def existingPR = new groovy.json.JsonSlurper().parseText(existingPRResponse)
+                            def existingPR = []
+                            if (existingPRResponse) {
+                                try {
+                                    existingPR = new groovy.json.JsonSlurper().parseText(existingPRResponse)
+                                } catch (Exception e) {
+                                    error "Failed to parse existing PR response: ${e.message}\nResponse: ${existingPRResponse}"
+                                }
+                            } else {
+                                echo "No existing pull request found."
+                            }
                             def prNumber = null
 
                             if (existingPR.size() > 0) {
