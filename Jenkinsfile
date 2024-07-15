@@ -41,12 +41,10 @@ pipeline {
                 script {
                     def version = "v1.${env.BUILD_NUMBER}"
                     def dockerImage = docker.build("joffe2001/playlist-app:${version}", "-f ./src/Dockerfile ./src")
-                    docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-credentials') {
-                        dockerImage.push()
-                    }
                 }
             }
         }
+
 
         stage('Create Pull Request') {
             when {
