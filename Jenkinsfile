@@ -82,17 +82,15 @@ pipeline {
 
                     echo "Created Pull Request: ${createPRResponse}"
 
-                    // Parse response to get PR number
-                    def prNumber = null
-                    try {
-                        prNumber = createPRResponse.readJSON().number
-                    } catch (Exception e) {
-                        error "Failed to parse JSON response from GitHub API: ${e.message}"
+                    // Parse response to check for errors
+                    def jsonResponse = createPRResponse.readLines().join('\n')
+                    def responseJson = new JsonSlurperClassic().parseText(jsonResponse)
+
+                    if (responseJson.message) {
+                        error "Failed to create pull request: ${responseJson.message}"
                     }
 
-                    if (prNumber == null) {
-                        error "Failed to get pull request number from GitHub API response."
-                    }
+                    def prNumber = responseJson.number ?: error "Failed to retrieve pull request number."
 
                     // Merge Pull Request payload
                     def mergePayload = [
