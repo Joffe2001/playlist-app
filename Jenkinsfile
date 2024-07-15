@@ -46,7 +46,7 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Fetch Latest Changes') {
             steps {
                 script {
@@ -57,6 +57,7 @@ pipeline {
                     sh 'git fetch origin ${env.BRANCH_NAME}:${env.BRANCH_NAME}'
                 }
             }
+        }
 
 
         stage('Create or Find Pull Request') {
