@@ -206,7 +206,7 @@ pipeline {
                         releaseId = releaseId ?: error("Failed to retrieve release ID.")
 
                         // Upload Helm chart to release
-                        def uploadUrl = "https://uploads.github.com/repos/${GITHUB_REPO}/releases/${releaseId}/assets?name=helm-chart-${version}.tgz"
+                        def uploadUrl = "https://uploads.github.com/repos/${GITHUB_REPO}/releases/${releaseId}/assets?name=joffeapp-${version}.tgz"
                         def uploadResponse = sh(
                             script: """
                             curl -sS -X POST \
