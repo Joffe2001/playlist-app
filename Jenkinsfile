@@ -46,6 +46,18 @@ pipeline {
                 }
             }
         }
+        
+        stage('Fetch Latest Changes') {
+            steps {
+                script {
+                    // Fetch the latest changes for all branches
+                    sh 'git fetch origin'
+                    // Ensure master and feature branches are up-to-date
+                    sh 'git fetch origin ${env.MASTER_BRANCH}:${env.MASTER_BRANCH}'
+                    sh 'git fetch origin ${env.BRANCH_NAME}:${env.BRANCH_NAME}'
+                }
+            }
+
 
         stage('Create or Find Pull Request') {
             when {
