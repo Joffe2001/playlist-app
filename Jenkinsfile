@@ -174,7 +174,6 @@ pipeline {
                         def authHeader = "token ${GITHUB_TOKEN}"
                         def tagName = "v${version}"
                         def releaseName = "Release ${tagName}"
-
                         // Create GitHub Release
                         def createReleaseResponse = sh(
                             script: """
