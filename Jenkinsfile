@@ -49,14 +49,14 @@ pipeline {
 
         stage('Create or Find Pull Request') {
             when {
-                branch 'issue'
+                branch 'feature'
             }
             steps {
                 script {
                     withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
                         def authHeader = "token ${GITHUB_TOKEN}"
                         
-                        // Check if the issue branch exists
+                        // Check if the feature branch exists
                         def branchExists = sh(
                             script: "git ls-remote --heads origin ${env.BRANCH_NAME}",
                             returnStatus: true
@@ -66,7 +66,7 @@ pipeline {
                             error "Branch ${env.BRANCH_NAME} does not exist on remote."
                         }
 
-                        // Check if there are changes between issue and master
+                        // Check if there are changes between feature and master
                         def changes = sh(
                             script: """
                             git diff --name-only origin/${env.MASTER_BRANCH} -- origin/${env.BRANCH_NAME}
