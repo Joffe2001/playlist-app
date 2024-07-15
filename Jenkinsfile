@@ -90,7 +90,7 @@ pipeline {
                         error "Failed to create pull request: ${responseJson.message}"
                     }
 
-                    def prNumber = responseJson.number ?: error "Failed to retrieve pull request number."
+                    def prNumber = responseJson.number ?: error("Failed to retrieve pull request number.")
 
                     // Merge Pull Request payload
                     def mergePayload = [
