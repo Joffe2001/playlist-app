@@ -169,7 +169,6 @@ pipeline {
                     }
                     sh "helm package helm-chart/ --version ${version}"
                     sh "helm repo index helm-chart/ --url https://github.com/${GITHUB_REPO}/tree/master/helm-chart/"
-                    // Upload the Helm chart to GitHub Release
                     withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
                         def authHeader = "token ${GITHUB_TOKEN}"
                         def tagName = "v${version}"
@@ -194,7 +193,7 @@ pipeline {
                         }
 
                         // Extract release ID
-                        def releaseId = sh(script: "echo '${createReleaseResponse}' | grep -oP '\"id\":\\s*\\K\\d+'", returnStdout: true).trim()
+                        def releaseId = sh(script: "echo '${createReleaseResponse}' | jq '.id'", returnStdout: true).trim()
                         releaseId = releaseId ?: error("Failed to retrieve release ID.")
 
                         // Upload Helm chart to release
@@ -220,7 +219,7 @@ pipeline {
                 }
             }
         }
-    }
+    }}
 
     post {
         failure {
