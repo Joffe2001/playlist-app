@@ -180,12 +180,12 @@ pipeline {
                 script {
                     def version = "v1.${env.BUILD_NUMBER}"
                     sh "helm package helm-chart/ --version ${version}"
-                    sh "helm repo index --url https://github.com/${GITHUB_REPO}/tree/master/helm-chart/ --merge helm-chart/index.yaml"
-                    sh "helm push helm-chart-${version}.tgz https://github.com/${GITHUB_REPO}/tree/master/helm-chart/"
+                    sh "helm repo index helm-chart/ --url https://github.com/${GITHUB_REPO}/tree/master/helm-chart/ --merge helm-chart/index.yaml"
+                    sh "helm push helm-chart/joffeapp-${version}.tgz https://github.com/${GITHUB_REPO}/tree/master/helm-chart/"
+
                     docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-credentials') {
-                        sh "helm package helm-chart/ --version ${version}"
-                        sh "helm repo index --url https://github.com/${GITHUB_REPO}/tree/master/helm-chart/ --merge helm-chart/index.yaml"
-                        sh "helm push helm-chart-${version}.tgz https://github.com/${GITHUB_REPO}/tree/master/helm-chart/"
+                        dockerImage.push("${version}")
+                        dockerImage.push("latest")
                     }
                 }
             }
