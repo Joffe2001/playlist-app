@@ -184,7 +184,7 @@ pipeline {
                     withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
                     sh """
                         rm -rf target-repo
-                        git clone ${TARGET_REPO_URL} target-repo
+                        git clone https://${TARGET_REPO_URL} target-repo
                         cp -r helm-chart/* target-repo/
                         cd target-repo
                         git config user.email "idojoffenevo@gmail.com"
