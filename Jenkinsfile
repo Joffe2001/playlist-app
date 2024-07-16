@@ -176,13 +176,47 @@ pipeline {
             when {
                 branch MASTER_BRANCH
             }
+            stage('Push Docker Image and HELM Package') {
+            when {
+                branch MASTER_BRANCH
+            }
             steps {
                 script {
                     def version = "v1.${env.BUILD_NUMBER}"
-                    sh "helm package helm-chart/ --version ${version}"
-                    sh "helm repo index helm-chart/ --url https://github.com/${GITHUB_REPO}/tree/master/helm-chart/ --merge helm-chart/index.yaml"
-                    sh "helm push helm-chart/joffeapp-${version}.tgz https://github.com/${GITHUB_REPO}/tree/master/helm-chart/"
+                    def chartPath = "helm-chart/joffeapp-${version}.tgz"
 
+                    // Package the Helm chart
+                    sh "helm package helm-chart/ --version ${version}"
+
+                    // Index the Helm chart repository
+                    sh "helm repo index helm-chart/ --url https://github.com/${GITHUB_REPO}/tree/master/helm-chart/ --merge helm-chart/index.yaml"
+
+                    // Create GitHub release
+                    def response = sh(
+                        script: """
+                            curl -X POST -H "Authorization: token ${env.GITHUB_TOKEN}" -H "Content-Type: application/json" -d '{
+                                "tag_name": "${version}",
+                                "target_commitish": "master",
+                                "name": "${version}",
+                                "body": "Release of version ${version}",
+                                "draft": false,
+                                "prerelease": false
+                            }' https://api.github.com/repos/${env.GITHUB_REPO}/releases
+                        """,
+                        returnStdout: true
+                    ).trim()
+
+                    def jsonResponse = readJSON text: response
+                    def releaseId = jsonResponse.id
+
+                    // Upload Helm chart to GitHub release
+                    sh """
+                        curl -X POST -H "Authorization: token ${env.GITHUB_TOKEN}" \
+                        -H "Content-Type: application/gzip" \
+                        --data-binary @${chartPath} \
+                        "https://uploads.github.com/repos/${env.GITHUB_REPO}/releases/${releaseId}/assets?name=joffeapp-${version}.tgz"
+                    """
+        
                     docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-credentials') {
                         dockerImage.push("${version}")
                         dockerImage.push("latest")
