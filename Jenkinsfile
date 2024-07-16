@@ -10,6 +10,8 @@ pipeline {
         DOCKER_REGISTRY = 'https://registry.hub.docker.com'
         GITHUB_REPO = 'Joffe2001/playlist-app'
         MASTER_BRANCH = 'master'
+        TARGET_REPO = "Joffe2001/playlist-app-chart" // Target repository
+        TARGET_REPO_URL = "https://github.com/${TARGET_REPO}.git"
     }
 
     stages {
@@ -179,40 +181,20 @@ pipeline {
             steps {
                 script {
                     def version = "v1.${env.BUILD_NUMBER}"
-                    def chartPath = "helm-chart/joffeapp-${version}.tgz"
 
-                    // Package the Helm chart
-                    sh "helm package helm-chart/ --version ${version}"
-
-                    // Index the Helm chart repository
-                    sh "helm repo index helm-chart/ --url https://github.com/${GITHUB_REPO}/tree/master/helm-chart/ --merge helm-chart/index.yaml"
-
-                    // Create GitHub release
-                    def response = sh(
-                        script: """
-                            curl -X POST -H "Authorization: token ${env.GITHUB_TOKEN}" -H "Content-Type: application/json" -d '{
-                                "tag_name": "${version}",
-                                "target_commitish": "master",
-                                "name": "${version}",
-                                "body": "Release of version ${version}",
-                                "draft": false,
-                                "prerelease": false
-                            }' https://api.github.com/repos/${env.GITHUB_REPO}/releases
-                        """,
-                        returnStdout: true
-                    ).trim()
-
-                    def jsonResponse = readJSON text: response
-                    def releaseId = jsonResponse.id
-
-                    // Upload Helm chart to GitHub release
                     sh """
-                        curl -X POST -H "Authorization: token ${env.GITHUB_TOKEN}" \
-                        -H "Content-Type: application/gzip" \
-                        --data-binary @${chartPath} \
-                        "https://uploads.github.com/repos/${env.GITHUB_REPO}/releases/${releaseId}/assets?name=joffeapp-${version}.tgz"
+                        rm -rf target-repo
+                        git clone ${TARGET_REPO_URL} target-repo
+                        cp -r helm-chart/* target-repo/
+                        cd target-repo
+                        git config user.email "idojoffenevo@gmail.com"
+                        git config user.name "Joffe2001"
+                        git add .
+                        git commit -m "Update helm chart to version ${version}"
+                        git push https://${GITHUB_TOKEN}@github.com/${TARGET_REPO}.git master
                     """
-        
+
+                    // Push Docker image
                     docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-credentials') {
                         dockerImage.push("${version}")
                         dockerImage.push("latest")
