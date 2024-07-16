@@ -191,7 +191,7 @@ pipeline {
                         git config user.name "Joffe2001"
                         git add .
                         git commit -m "Update helm chart to version ${version}" || echo "No changes to commit"
-                        git push https://${GITHUB_TOKEN}@${env.TARGET_REPO_URL} master || git push https://${GITHUB_TOKEN}@${env.TARGET_REPO_URL} main
+                        git push https://${GITHUB_TOKEN}@${env.TARGET_REPO_URL} main
                     """
                     }
 
