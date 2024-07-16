@@ -193,7 +193,8 @@ pipeline {
                         git commit -m "Update helm chart to version ${version}" || echo "No changes to commit"
                         git push https://${GITHUB_TOKEN}@${env.TARGET_REPO_URL} master || git push https://${GITHUB_TOKEN}@${env.TARGET_REPO_URL} main
                     """
-
+                    }
+                    
                     // Push Docker image
                     docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-credentials') {
                         dockerImage.push("${version}")
