@@ -47,18 +47,6 @@ pipeline {
             }
         }
 
-        stage('Fetch Latest Changes') {
-            steps {
-                script {
-                    // Fetch the latest changes for all branches
-                    sh 'git fetch origin'
-                    // Ensure master and feature branches are up-to-date
-                    sh 'git fetch origin ${env.MASTER_BRANCH}:${env.MASTER_BRANCH}'
-                    sh 'git fetch origin ${env.BRANCH_NAME}:${env.BRANCH_NAME}'
-                }
-            }
-        }
-
 
         stage('Create or Find Pull Request') {
             when {
@@ -67,7 +55,6 @@ pipeline {
             steps {
                 script {
                     withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
-                        // Export the token as an environment variable for the sh steps
                         def authHeader = "Authorization: token ${GITHUB_TOKEN}"
 
                         // Check if the feature branch exists
@@ -83,6 +70,7 @@ pipeline {
                         // Check if there are changes between feature and master
                         def changes = sh(
                             script: """
+                            git fetch origin
                             git diff --name-only origin/${env.MASTER_BRANCH}..origin/${env.BRANCH_NAME}
                             """,
                             returnStdout: true
@@ -127,7 +115,6 @@ pipeline {
                                     base: env.MASTER_BRANCH
                                 ]
 
-                                // Convert payload to JSON string
                                 def payloadJson = groovy.json.JsonOutput.toJson(payload)
 
                                 // Send POST request to create pull request
@@ -151,7 +138,6 @@ pipeline {
                                     error "Failed to parse create PR response: ${e.message}\nResponse: ${createPRResponse}"
                                 }
 
-                                // Check for errors in the response
                                 if (createdPR?.message == "Validation Failed") {
                                     def errorMessage = createdPR.errors?.find { it.message }?.message
                                     if (errorMessage?.contains("A pull request already exists")) {
@@ -207,9 +193,10 @@ pipeline {
                                 error "Failed to parse merge PR response: ${e.message}\nResponse: ${mergePRResponse}"
                             }
 
-                            // Check for merge errors in the response
                             if (mergedPR?.message == "Not Found") {
                                 error "Failed to merge pull request. Check GitHub repository URL or permissions."
+                            } else {
+                                echo "Pull request successfully merged."
                             }
                         } else {
                             echo "No changes between ${env.BRANCH_NAME} and ${env.MASTER_BRANCH}. Skipping pull request creation."
