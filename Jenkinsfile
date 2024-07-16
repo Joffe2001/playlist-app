@@ -165,40 +165,6 @@ pipeline {
                                 }
                             }
 
-                            // Merge Pull Request payload
-                            def mergePayload = [
-                                commit_title: "Merge Pull Request",
-                                merge_method: "merge"
-                            ]
-                            def mergePayloadJson = groovy.json.JsonOutput.toJson(mergePayload)
-
-                            // Send POST request to merge pull request
-                            def mergePRResponse = sh(
-                                script: """
-                                curl -sS -X POST \
-                                -H "$authHeader" \
-                                -H "Content-Type: application/json" \
-                                -d '${mergePayloadJson}' \
-                                "https://api.github.com/repos/${GITHUB_REPO}/pulls/${prNumber}/merge"
-                                """,
-                                returnStdout: true
-                            ).trim()
-
-                            echo "Merge PR Response: ${mergePRResponse}"
-
-                            def mergedPR = null
-                            try {
-                                mergedPR = new groovy.json.JsonSlurper().parseText(mergePRResponse)
-                            } catch (Exception e) {
-                                error "Failed to parse merge PR response: ${e.message}\nResponse: ${mergePRResponse}"
-                            }
-
-                            if (mergedPR?.message == "Not Found") {
-                                error "Failed to merge pull request. Check GitHub repository URL or permissions."
-                            } else {
-                                echo "Pull request successfully merged."
-                            }
-                        } else {
                             echo "No changes between ${env.BRANCH_NAME} and ${env.MASTER_BRANCH}. Skipping pull request creation."
                         }
                     }
