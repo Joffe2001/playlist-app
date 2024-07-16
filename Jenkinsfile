@@ -190,9 +190,14 @@ pipeline {
                         git config user.email "idojoffenevo@gmail.com"
                         git config user.name "Joffe2001"
                         git add .
-                        git commit -m "Update helm chart to version ${version}" || echo "No changes to commit"
-                        git push https://${GITHUB_TOKEN}@${env.TARGET_REPO_URL} main
-                    """
+                        if ! git diff-index --quiet HEAD; then
+                                git commit -m "Update helm chart to version ${version}"
+                                git branch -M main
+                                git push https://${GITHUB_TOKEN}@${env.TARGET_REPO_URL} main
+                            else
+                                echo "No changes to commit"
+                            fi
+                        """
                     }
 
                     // Push Docker image
