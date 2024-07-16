@@ -10,7 +10,7 @@ pipeline {
         DOCKER_REGISTRY = 'https://registry.hub.docker.com'
         GITHUB_REPO = 'Joffe2001/playlist-app'
         MASTER_BRANCH = 'master'
-        TARGET_REPO = "Joffe2001/playlist-app-chart" // Target repository
+        TARGET_REPO = "Joffe2001/playlist-app-chart" 
         TARGET_REPO_URL = "https://github.com/${TARGET_REPO}.git"
     }
 
@@ -191,10 +191,10 @@ pipeline {
                         git config user.name "Joffe2001"
                         git add .
                         git commit -m "Update helm chart to version ${version}" || echo "No changes to commit"
-                        git push https://${GITHUB_TOKEN}@${env.TARGET_REPO_URL} master || git push https://${GITHUB_TOKEN}@${env.TARGET_REPO_URL} main
+                        git push https://${GITHUB_TOKEN}@${env.TARGET_REPO} master || git push https://${GITHUB_TOKEN}@${env.TARGET_REPO} main
                     """
                     }
-                    
+
                     // Push Docker image
                     docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-credentials') {
                         dockerImage.push("${version}")
