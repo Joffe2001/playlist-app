@@ -176,10 +176,6 @@ pipeline {
             when {
                 branch MASTER_BRANCH
             }
-            stage('Push Docker Image and HELM Package') {
-            when {
-                branch MASTER_BRANCH
-            }
             steps {
                 script {
                     def version = "v1.${env.BUILD_NUMBER}"
