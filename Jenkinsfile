@@ -9,6 +9,7 @@ pipeline {
     environment {
         DOCKER_REGISTRY = 'https://registry.hub.docker.com'
         GITHUB_REPO = 'Joffe2001/playlist-app'
+        GITHUB_TOKEN = credentials('github-token')
         MASTER_BRANCH = 'master'
         TARGET_REPO = "Joffe2001/playlist-app-chart" // Target repository
         TARGET_REPO_URL = "https://github.com/${TARGET_REPO}.git"
