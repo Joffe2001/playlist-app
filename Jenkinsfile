@@ -201,7 +201,7 @@ pipeline {
                     }
 
                     // Push Docker image
-                    docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-credentials') {
+                    docker.withRegistry('https://registry.hub.docker.com', 'docker-joffe-credential') {
                         dockerImage.push("${version}")
                         dockerImage.push("latest")
                     }
