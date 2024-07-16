@@ -1,11 +1,8 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: joffeapp-flaskapp-sanity-check
+  name: joffeapp-flaskapp-sanity-check-{{ .Release.Revision }}
   namespace: default
-  annotations:
-    kubectl.kubernetes.io/last-applied-configuration: |
-      {"apiVersion":"batch/v1","kind":"Job","metadata":{"name":"joffeapp-flaskapp-sanity-check","namespace":"default","annotations":{}},"spec":{"template":{"spec":{"containers":[{"name":"flaskapp-sanity-check","image":"joffe2001/playlist-app:latest","command":["python"],"args":["sanity_check.py"]}],"restartPolicy":"Never"}}}}
 spec:
   template:
     spec:
@@ -15,3 +12,4 @@ spec:
         command: ["python"]
         args: ["sanity_check.py"]
       restartPolicy: Never
+  backoffLimit: 4
