@@ -174,8 +174,6 @@ pipeline {
 
         stage('Push Docker Image and HELM Package') {
             when {
-                beforeAgent true
-                changeset "branches: [${MASTER_BRANCH}]"
                 branch MASTER_BRANCH
             }
             steps {
