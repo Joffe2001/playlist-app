@@ -164,7 +164,7 @@ pipeline {
                                     echo "Created Pull Request: ${prNumber}"
                                 }
                             }
-                        else:
+                        } else {
                             echo "No changes between ${env.BRANCH_NAME} and ${env.MASTER_BRANCH}. Skipping pull request creation."
                         }
                     }
