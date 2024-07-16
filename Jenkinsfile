@@ -9,7 +9,6 @@ pipeline {
     environment {
         DOCKER_REGISTRY = 'https://registry.hub.docker.com'
         GITHUB_REPO = 'Joffe2001/playlist-app'
-        GITHUB_TOKEN = credentials('github-token')
         MASTER_BRANCH = 'master'
         TARGET_REPO = "Joffe2001/playlist-app-chart" // Target repository
         TARGET_REPO_URL = "https://github.com/${TARGET_REPO}.git"
@@ -182,7 +181,7 @@ pipeline {
             steps {
                 script {
                     def version = "v1.${env.BUILD_NUMBER}"
-
+                    withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
                     sh """
                         rm -rf target-repo
                         git clone ${TARGET_REPO_URL} target-repo
@@ -191,8 +190,8 @@ pipeline {
                         git config user.email "idojoffenevo@gmail.com"
                         git config user.name "Joffe2001"
                         git add .
-                        git commit -m "Update helm chart to version ${version}"
-                        git push https://${GITHUB_TOKEN}@github.com/${TARGET_REPO}.git master
+                        git commit -m "Update helm chart to version ${version}" || echo "No changes to commit"
+                        git push https://${GITHUB_TOKEN}@${env.TARGET_REPO_URL} master || git push https://${GITHUB_TOKEN}@${env.TARGET_REPO_URL} main
                     """
 
                     // Push Docker image
