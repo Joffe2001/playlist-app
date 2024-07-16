@@ -171,6 +171,27 @@ pipeline {
                 }
             }
         }
+        
+        stage('Push Docker Image and HELM Package') {
+            when {
+                beforeAgent true
+                changeset "branches: [${MASTER_BRANCH}]"
+                branch MASTER_BRANCH
+            }
+            steps {
+                script {
+                    def version = "v1.${env.BUILD_NUMBER}"
+                    sh "helm package src/helm-chart/ --version ${version}"
+                    sh "helm repo index --url https://github.com/${GITHUB_REPO}/tree/master/src/helm-chart/ --merge src/helm-chart/index.yaml"
+                    sh "helm push src/helm-chart-${version}.tgz https://github.com/${GITHUB_REPO}/tree/master/src/helm-chart/"
+                    docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-credentials') {
+                        sh "helm package src/helm-chart/ --version ${version}"
+                        sh "helm repo index --url https://github.com/${GITHUB_REPO}/tree/master/src/helm-chart/ --merge src/helm-chart/index.yaml"
+                        sh "helm push src/helm-chart-${version}.tgz https://github.com/${GITHUB_REPO}/tree/master/src/helm-chart/"
+                    }
+                }
+            }
+        }
     }
 
     post {
