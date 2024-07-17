@@ -10,36 +10,6 @@ server:
     enabled: false
 
 configs:
-
-  repositories: |
-    - url: https://github.com/Joffe2001/playlist-app-chart.git
-      type: git
-      name: playlist-app-chart
-      passwordSecret:
-        name: repo-credentials
-        key: password
-      usernameSecret:
-        name: repo-credentials
-        key: username
-
-  # Configure ArgoCD projects
-  projects: |
-    - apiVersion: argoproj.io/v1alpha1
-      kind: AppProject
-      metadata:
-        name: default
-        namespace: argocd
-      spec:
-        description: Default project
-        sourceRepos:
-          - '*'
-        destinations:
-          - namespace: '*'
-            server: https://kubernetes.default.svc
-        clusterResourceWhitelist:
-          - group: '*'
-            kind: '*'
-
   # Configure ArgoCD applications
   applications: |
     - apiVersion: argoproj.io/v1alpha1
@@ -69,38 +39,15 @@ configs:
         project: default
         source:
           repoURL: https://github.com/Joffe2001/playlist-app-chart.git
-          targetRevision: HEAD
-          path: charts/prometheus
+          targetRevision: main
+          path: .
           helm:
             valueFiles:
               - values/prometheus-values.yaml
         destination:
           server: https://kubernetes.default.svc
-          namespace: monitoring
+          namespace: observation
         syncPolicy:
           automated:
             prune: true
             selfHeal: true
-
-# Dex settings for SSO
-dex:
-  enabled: false
-
-# Redis settings
-redis:
-  enabled: true
-  usePassword: false
-
-# Repo-server settings
-repoServer:
-  volumes: []
-  volumeMounts: []
-
-# Controller settings
-controller:
-  logLevel: info
-  resources: {}
-
-# HA settings
-ha:
-  enabled: false
