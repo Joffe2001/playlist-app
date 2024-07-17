@@ -38,16 +38,19 @@ configs:
       spec:
         project: default
         source:
-          repoURL: https://github.com/Joffe2001/playlist-app-chart.git
-          targetRevision: main
-          path: .
-          helm:
-            valueFiles:
-              - values/prometheus-values.yaml
+          repoURL: 'https://prometheus-community.github.io/helm-charts'
+          targetRevision: 61.3.2
+          chart: kube-prometheus-stack
+          path: ''
         destination:
           server: https://kubernetes.default.svc
           namespace: observation
+        sources: []
+        project: default
         syncPolicy:
           automated:
             prune: true
             selfHeal: true
+        syncOptions:
+          - ServerSideApply=true
+          - CreateNamespace=true
