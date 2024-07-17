@@ -1,0 +1,19 @@
+grafana:
+  enabled: true
+  namespace: observation
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 512Mi
+  persistence:
+    enabled: true
+    size: 10Gi
+    accessModes:
+      - ReadWriteOnce
+    annotations: {}
+    finalizers:
+      - kubernetes.io/pvc-protection
+  adminPassword: "909090" # Placeholder

@@ -8,8 +8,10 @@ pipeline {
 
     environment {
         DOCKER_REGISTRY = 'https://registry.hub.docker.com'
-        GITHUB_REPO = 'Joffe2001/DevOps-Project'
+        GITHUB_REPO = 'Joffe2001/playlist-app'
         MASTER_BRANCH = 'master'
+        TARGET_REPO = "Joffe2001/playlist-app-chart" 
+        TARGET_REPO_URL = "github.com/${TARGET_REPO}.git"
     }
 
     stages {
@@ -42,20 +44,21 @@ pipeline {
             steps {
                 script {
                     def version = "v1.${env.BUILD_NUMBER}"
-                    dockerImage = docker.build("joffe2001/DevOps-Project:${version}", "-f ./src/Dockerfile ./src")
+                    dockerImage = docker.build("joffe2001/playlist-app:${version}", "-f ./src/Dockerfile ./src")
                 }
             }
         }
 
+
         stage('Create or Find Pull Request') {
             when {
-                branch 'feature'
+                branch 'feature' 
             }
             steps {
                 script {
                     withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
-                        def authHeader = "token ${GITHUB_TOKEN}"
-                        
+                        def authHeader = "Authorization: token ${GITHUB_TOKEN}"
+
                         // Check if the feature branch exists
                         def branchExists = sh(
                             script: "git ls-remote --heads origin ${env.BRANCH_NAME}",
@@ -69,25 +72,37 @@ pipeline {
                         // Check if there are changes between feature and master
                         def changes = sh(
                             script: """
-                            git diff --name-only origin/${env.MASTER_BRANCH} -- origin/${env.BRANCH_NAME}
+                            git fetch origin
+                            git diff --name-only origin/${env.MASTER_BRANCH}..origin/${env.BRANCH_NAME}
                             """,
                             returnStdout: true
                         ).trim()
+
+                        echo "Changes:\n${changes}"
 
                         if (changes) {
                             // Check for existing pull request
                             def existingPRResponse = sh(
                                 script: """
-                                curl -sS -H 'Authorization: ${authHeader}' \
-                                -H 'Content-Type: application/json' \
-                                https://api.github.com/repos/${GITHUB_REPO}/pulls?head=Joffe2001:${env.BRANCH_NAME}&base=${env.MASTER_BRANCH}
+                                curl -sS -H "$authHeader" \
+                                -H "Content-Type: application/json" \
+                                "https://api.github.com/repos/${GITHUB_REPO}/pulls?head=Joffe2001:${env.BRANCH_NAME}&base=${env.MASTER_BRANCH}"
                                 """,
                                 returnStdout: true
                             ).trim()
 
                             echo "Existing PR Response: ${existingPRResponse}"
 
-                            def existingPR = readJSON text: existingPRResponse
+                            def existingPR = []
+                            if (existingPRResponse) {
+                                try {
+                                    existingPR = new groovy.json.JsonSlurper().parseText(existingPRResponse)
+                                } catch (Exception e) {
+                                    error "Failed to parse existing PR response: ${e.message}\nResponse: ${existingPRResponse}"
+                                }
+                            } else {
+                                echo "No existing pull request found."
+                            }
                             def prNumber = null
 
                             if (existingPR.size() > 0) {
@@ -102,53 +117,54 @@ pipeline {
                                     base: env.MASTER_BRANCH
                                 ]
 
+                                def payloadJson = groovy.json.JsonOutput.toJson(payload)
+
                                 // Send POST request to create pull request
                                 def createPRResponse = sh(
                                     script: """
                                     curl -sS -X POST \
-                                    -H 'Authorization: ${authHeader}' \
-                                    -H 'Content-Type: application/json' \
-                                    -d '${groovy.json.JsonOutput.toJson(payload)}' \
-                                    https://api.github.com/repos/${GITHUB_REPO}/pulls
+                                    -H "$authHeader" \
+                                    -H "Content-Type: application/json" \
+                                    -d '${payloadJson}' \
+                                    "https://api.github.com/repos/${GITHUB_REPO}/pulls"
                                     """,
                                     returnStdout: true
                                 ).trim()
 
-                                echo "Created Pull Request: ${createPRResponse}"
+                                echo "Create PR Response: ${createPRResponse}"
 
-                                // Check for errors in the response
-                                if (createPRResponse.contains('"message":')) {
-                                    error "Failed to create pull request: ${createPRResponse}"
+                                def createdPR = null
+                                try {
+                                    createdPR = new groovy.json.JsonSlurper().parseText(createPRResponse)
+                                } catch (Exception e) {
+                                    error "Failed to parse create PR response: ${e.message}\nResponse: ${createPRResponse}"
                                 }
 
-                                // Extract pull request number
-                                prNumber = sh(script: "echo ${createPRResponse} | grep -oP '\"number\":\\s*\\K\\d+'", returnStdout: true).trim()
-                                prNumber = prNumber ?: error("Failed to retrieve pull request number.")
-                            }
+                                if (createdPR?.message == "Validation Failed") {
+                                    def errorMessage = createdPR.errors?.find { it.message }?.message
+                                    if (errorMessage?.contains("A pull request already exists")) {
+                                        def prInfoResponse = sh(
+                                            script: """
+                                            curl -sS -H "$authHeader" \
+                                            -H "Content-Type: application/json" \
+                                            "https://api.github.com/repos/${GITHUB_REPO}/pulls?head=Joffe2001:${env.BRANCH_NAME}&base=${env.MASTER_BRANCH}"
+                                            """,
+                                            returnStdout: true
+                                        ).trim()
 
-                            // Merge Pull Request payload
-                            def mergePayload = [
-                                commit_title: "Merge Pull Request",
-                                merge_method: "merge"
-                            ]
-
-                            // Send POST request to merge pull request
-                            def mergePRResponse = sh(
-                                script: """
-                                curl -sS -X POST \
-                                -H 'Authorization: ${authHeader}' \
-                                -H 'Content-Type: application/json' \
-                                -d '${groovy.json.JsonOutput.toJson(mergePayload)}' \
-                                https://api.github.com/repos/${GITHUB_REPO}/pulls/${prNumber}/merge
-                                """,
-                                returnStdout: true
-                            ).trim()
-
-                            echo "Merged Pull Request: ${mergePRResponse}"
-
-                            // Check for merge errors in the response
-                            if (mergePRResponse.contains('"message": "Not Found"')) {
-                                error "Failed to merge pull request. Check GitHub repository URL or permissions."
+                                        def prInfo = new groovy.json.JsonSlurper().parseText(prInfoResponse)
+                                        prNumber = prInfo[0].number
+                                        echo "PR already exists: ${prNumber}"
+                                    } else {
+                                        error "Failed to create pull request: ${createdPR.message}"
+                                    }
+                                } else {
+                                    prNumber = createdPR?.number
+                                    if (!prNumber) {
+                                        error "Failed to retrieve pull request number from response: ${createPRResponse}"
+                                    }
+                                    echo "Created Pull Request: ${prNumber}"
+                                }
                             }
                         } else {
                             echo "No changes between ${env.BRANCH_NAME} and ${env.MASTER_BRANCH}. Skipping pull request creation."
@@ -160,74 +176,34 @@ pipeline {
 
         stage('Push Docker Image and HELM Package') {
             when {
-                branch "${env.MASTER_BRANCH}"
+                branch MASTER_BRANCH
             }
             steps {
                 script {
                     def version = "v1.${env.BUILD_NUMBER}"
-                    docker.withRegistry('https://registry.hub.docker.com', 'docker-joffe-credential') {
-                        dockerImage.push(version)
-                    }
-                    sh "helm package helm-chart/ --version ${version}"
-
-                    // Verify the Helm package was created successfully
-                    def helmChartPath = "${WORKSPACE}/joffeapp-${version}.tgz"
-                    if (!fileExists(helmChartPath)) {
-                        error "Helm chart package ${helmChartPath} does not exist."
-                    } else {
-                        echo "Helm chart package ${helmChartPath} created successfully."
-                    }
-
-                    sh "ls -lh ${helmChartPath}" // List the details of the created package
-                    sh "helm repo index helm-chart/ --url https://github.com/${GITHUB_REPO}/tree/master/helm-chart/"
-
-                    // Upload the Helm chart to GitHub Release
                     withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
-                        def authHeader = "token ${GITHUB_TOKEN}"
-                        def tagName = "v${version}"
-                        def releaseName = "Release ${tagName}"
-                        // Create GitHub Release
-                        def createReleaseResponse = sh(
-                            script: """
-                            curl -sS -X POST \
-                            -H 'Authorization: ${authHeader}' \
-                            -H 'Content-Type: application/json' \
-                            -d '{"tag_name": "${tagName}", "name": "${releaseName}", "body": "Automated release for ${tagName}"}' \
-                            https://api.github.com/repos/${GITHUB_REPO}/releases
-                            """,
-                            returnStdout: true
-                        ).trim()
+                    sh """
+                        rm -rf target-repo
+                        git clone https://${TARGET_REPO_URL} target-repo
+                        cp -r helm-chart/* target-repo/
+                        cd target-repo
+                        git config user.email "idojoffenevo@gmail.com"
+                        git config user.name "Joffe2001"
+                        git add .
+                        if ! git diff-index --quiet HEAD; then
+                                git commit -m "Update helm chart to version ${version}"
+                                git branch -M main
+                                git push https://${GITHUB_TOKEN}@${env.TARGET_REPO_URL} main
+                            else
+                                echo "No changes to commit"
+                            fi
+                        """
+                    }
 
-                        echo "Created Release: ${createReleaseResponse}"
-
-                        // Check for errors in the response
-                        if (createReleaseResponse.contains('"message":')) {
-                            error "Failed to create release: ${createReleaseResponse}"
-                        }
-
-                        // Extract release ID
-                        def releaseId = sh(script: "echo '${createReleaseResponse}' | jq '.id'", returnStdout: true).trim()
-                        releaseId = releaseId ?: error("Failed to retrieve release ID.")
-
-                        // Upload Helm chart to release
-                        def uploadUrl = "https://uploads.github.com/repos/${GITHUB_REPO}/releases/${releaseId}/assets?name=joffeapp-${version}.tgz"
-                        def uploadResponse = sh(
-                            script: """
-                            curl -sS -X POST \
-                            -H 'Authorization: ${authHeader}' \
-                            -H 'Content-Type: application/gzip' \
-                            --data-binary @${helmChartPath} \
-                            ${uploadUrl}
-                            """,
-                            returnStdout: true
-                        ).trim()
-
-                        echo "Uploaded Helm Chart: ${uploadResponse}"
-
-                        // Check for upload errors in the response
-                        if (uploadResponse.contains('"message":')) {
-                            error "Failed to upload Helm chart: ${uploadResponse}"
-                        }
+                    // Push Docker image
+                    docker.withRegistry('https://registry.hub.docker.com', 'docker-joffe-credential') {
+                        dockerImage.push("${version}")
+                        dockerImage.push("latest")
                     }
                 }
             }

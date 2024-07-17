@@ -39,8 +39,8 @@ kubectl port-forward svc/mongo-express 8081:8081 -n defaultkubectl port-forward 
 kubectl port-forward svc/joffeapp 5000:5000 -n default &
 kubectl port-forward svc/jenkins 8080:8080 --namespace jenkins &
 kubectl port-forward svc/argocd 443:443 --namespace argocd &
-kubectl port-forward svc/grafana 3000:3000 --namespace observation &
-kubectl port-forward svc/prometheus-server 80:80 --namespace observation &
+kubectl port-forward svc/grafana 3000:80 --namespace observation &
+kubectl port-forward svc/prometheus-server 9090:80 --namespace observation &
 
 # Wait for background processes to finish
 wait
