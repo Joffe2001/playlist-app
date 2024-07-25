@@ -1,0 +1,25 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: argocd-rules
+  namespace: observation
+spec:
+  groups:
+  - name: argocd-rules
+    rules:
+    - alert: ArgoCDAppSyncFailure
+      expr: argocd_app_sync_status{status!="Synced"} > 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "ArgoCD Application Sync Failure"
+        description: "ArgoCD application {{ $labels.app }} is not in sync state for more than 5 minutes."
+    - alert: ArgoCDRepoUpdate
+      expr: changes(argocd_repo_update_count[5m]) > 0
+      for: 0m
+      labels:
+        severity: info
+      annotations:
+        summary: "ArgoCD Repository Updated"
+        description: "ArgoCD repository has been updated."

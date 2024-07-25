@@ -1,2 +1,44 @@
-# Ido Joffe's DevOps final project 
-I'll now explain all the steps and the tools I've worked on to make this project.
+# Ido's DevOps project
+
+This is my final DevOps project, a web server for sharing playlists. This how I created a Pipeline that detect a change in the Github repository, run tests and then change the Cluster based on the last commit.
+
+## Cluser setup (Using Docker Desktop)
+1. Install Docker Desktop
+2. Enable Kubernetes in Docker Desktop
+3. Ensure kubectl is configured to communicate with your Docker Desktop Kubernetes cluster:
+   ```bash
+   kubectl config view
+   kubectl get nodes
+4. **Clone the Repository**
+   ```bash
+   git clone https://github.com/Joffe2001/playlist-app/
+   cd playlist-app
+5. Create the namespaces: 
+   ```bash
+   kubectl create namespace jenkins
+   kubectl create namespace argocd
+   kubectl create namespace observation
+6. Add the helm repositories:
+   ```bash
+   helm repo add jenkins https://charts.jenkins.io
+   helm repo add bitnami https://charts.bitnami.com/bitnami (For MongoDB)
+   helm repo add argo https://argoproj.github.io/argo-helm
+   helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+   helm repo add grafana https://grafana.github.io/helm-charts
+   helm repo update
+7. Install Helm charts with custom values files:
+   ```bash
+   helm install joffeapp . -n default -f values/joffeapp-values.yaml
+   helm install mongodb bitnami/mongodb -n default -f values/mongodb-values.yaml
+   helm install jenkins jenkins/jenkins -n jenkins -f values/jenkins-values.yaml
+   helm install argocd argo/argo-cd -n argocd
+   helm install prometheus prometheus-community/prometheus -n observation
+   helm install grafana grafana/grafana -n observation
+## App setup
+   ```bash
+   kubectl port-forward svc/joffeapp 5000:5000 -n default
+   kubectl port-forward svc/mongodb 27017:27017 -n default
+
+## Jenkins Setup
+   ```bash
+   kubectl port-forward svc/jenkins 8080:8080 --namespace jenkins
