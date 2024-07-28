@@ -18,7 +18,7 @@ pipeline {
         stage('Checkout Code') {
             steps {
                 checkout scm
-                sh 'git config --global --add safe.directory ${WORKSPACE}'
+                sh 'git config --global --add safe.directory ${WORKSPACE}' //Configure Git to recognize it as "safe". Will affect all repositories.
             }
         }
 
